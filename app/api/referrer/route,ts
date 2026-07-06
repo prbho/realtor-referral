@@ -1,0 +1,41 @@
+// app/api/referrer/route.ts
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { checkRateLimit, recordAttempt } from "@/lib/rateLimit";
+
+export async function GET(request) {
+  const code = request.nextUrl.searchParams.get("code");
+
+  if (!code) {
+    return NextResponse.json(
+      { error: "Missing referral code" },
+      { status: 400 }
+    );
+  }
+
+  const ip = request.headers.get("x-forwarded-for") ?? "unknown";
+  const rateCheck = await checkRateLimit(`referrer-lookup:${ip}`);
+  if (!rateCheck.allowed) {
+    return NextResponse.json(
+      { error: "Too many requests. Please try again shortly." },
+      { status: 429 }
+    );
+  }
+  await recordAttempt(`referrer-lookup:${ip}`);
+
+  const referrer = await prisma.user.findFirst({
+    where: { referralCode: code },
+    select: { name: true },
+  });
+
+  if (!referrer) {
+    return NextResponse.json(
+      { error: "Invalid referral code" },
+      { status: 404 }
+    );
+  }
+
+  // Only ever expose the name — never email, id, or any other field here,
+  // since this endpoint is unauthenticated and reachable by anyone with a code.
+  return NextResponse.json({ name: referrer.name });
+}
