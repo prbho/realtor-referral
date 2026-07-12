@@ -35,6 +35,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import Image from "next/image";
 
 type Role = "USER" | "REALTOR" | "ADMIN";
 
@@ -44,9 +45,11 @@ type Referral = {
   email: string;
   role: string;
   createdAt: string;
+  image: string | null;
 };
 
 type UserRow = {
+  image: string | null;
   id: string;
   name: string | null;
   email: string;
@@ -216,6 +219,7 @@ export default function AdminUsersTable({
   currentUserId: string;
 }) {
   const [usersState, setUsersState] = useState<UserRow[]>(users);
+  const [image, setImage] = useState(users[0]?.image);
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<"ALL" | Role>("ALL");
   const [referralUser, setReferralUser] = useState<UserRow | null>(null);
@@ -532,6 +536,14 @@ export default function AdminUsersTable({
                   className="border-b border-gray-200 dark:border-neutral-700 last:border-0 hover:bg-gray-50 dark:hover:bg-neutral-700/50 transition-colors duration-200"
                 >
                   <TableCell className="px-4 py-3">
+                    <Image
+                      src={image || "/avatar.png"}
+                      alt={user.name || "Avatar"}
+                      width={32}
+                      height={32}
+                      className="inline-block rounded-full mr-2"
+                      unoptimized
+                    />
                     <button
                       onClick={() => openProfile(user)}
                       className="font-medium text-neutral-800 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 hover:underline text-left"
@@ -809,13 +821,23 @@ export default function AdminUsersTable({
                   key={ref.id}
                   className="flex items-center justify-between border-b border-gray-200 dark:border-neutral-700 last:border-0 pb-3 last:pb-0"
                 >
-                  <div>
-                    <p className="text-sm font-medium text-neutral-800 dark:text-white">
-                      {ref.name || "—"}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {ref.email}
-                    </p>
+                  <div className="flex items-center">
+                    <Image
+                      src={ref.image || "/avatar.png"}
+                      alt={ref.name || "Avatar"}
+                      width={32}
+                      height={32}
+                      className="inline-block rounded-full mr-2"
+                      unoptimized
+                    />
+                    <div className="flex flex-col">
+                      <p className="text-sm font-medium text-neutral-800 dark:text-white">
+                        {ref.name || "—"}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {ref.email}
+                      </p>
+                    </div>
                   </div>
                   <div className="text-right">
                     <RoleBadge role={ref.role} />
