@@ -25,3 +25,8 @@ export function isValidPassword(password: string): {
   }
   return { valid: true };
 }
+
+export function isValidNIN(nin: string): boolean {
+  // Nigerian NIN is an 11-digit numeric string
+  return /^\d{11}$/.test(nin.trim());
+}

@@ -5,7 +5,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
-import { isValidEmail, isValidPassword } from "@/lib/validation";
+import { isValidEmail, isValidPassword, isValidNIN } from "@/lib/validation";
 import { sendVerificationEmail } from "@/lib/email";
 
 const OPTIONAL_TEXT_FIELDS = [
@@ -29,7 +29,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, email: rawEmail, currentPassword, newPassword } = body;
+    const { name, email: rawEmail, currentPassword, newPassword, nin } = body;
 
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
@@ -38,7 +38,7 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    const updates: Record<string, unknown> = {};
+    const updates: Record<string, any> = {};
     const messages: string[] = [];
 
     // --- Name update ---
@@ -67,7 +67,7 @@ export async function PATCH(request: NextRequest) {
         }
 
         updates.email = email;
-        updates.emailVerified = null; // require re-verification of the new address
+        updates.emailVerified = null;
 
         const token = crypto.randomBytes(32).toString("hex");
         await prisma.verificationToken.deleteMany({
@@ -85,6 +85,31 @@ export async function PATCH(request: NextRequest) {
         messages.push(
           "Email updated. Please check your new inbox to verify it."
         );
+      }
+    }
+
+    // --- NIN update ---
+    if (typeof nin === "string" && nin.trim()) {
+      const trimmedNin = nin.trim();
+
+      if (!isValidNIN(trimmedNin)) {
+        return NextResponse.json(
+          { error: "NIN must be exactly 11 digits" },
+          { status: 400 }
+        );
+      }
+
+      if (trimmedNin !== user.nin) {
+        const existingNin = await prisma.user.findUnique({
+          where: { nin: trimmedNin },
+        });
+        if (existingNin && existingNin.id !== user.id) {
+          return NextResponse.json(
+            { error: "This NIN is already associated with another account" },
+            { status: 400 }
+          );
+        }
+        updates.nin = trimmedNin;
       }
     }
 

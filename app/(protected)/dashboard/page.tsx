@@ -362,7 +362,7 @@ export default async function DashboardPage() {
           </div>
         ) : (
           <ul className="divide-y divide-gray-200 dark:divide-neutral-700">
-            {user.referrals.map((ref) => (
+            {user.referrals.map((ref: { id: string; name: string | null; email: string; createdAt: Date }) => (
               <li key={ref.id} className="py-3 flex items-center gap-3">
                 <div className="h-9 w-9 shrink-0 rounded-full bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 flex items-center justify-center text-xs font-semibold">
                   {initials(ref.name)}

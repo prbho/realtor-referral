@@ -2,10 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { isValidEmail, isValidPassword } from "@/lib/validation";
+import { isValidEmail, isValidPassword, isValidNIN } from "@/lib/validation";
 import {
-  LockKeyhole,
-  UserPen,
+  // LockKeyhole,
   Check,
   Loader2,
   Landmark,
@@ -17,6 +16,9 @@ import {
   Banknote,
   AlertCircle,
   Info,
+  IdCard,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,10 +30,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
-type User = {
+type UserData = {
   id: string;
   name: string | null;
   email: string;
@@ -43,6 +44,7 @@ type User = {
   state: string | null;
   zipCode: string | null;
   country: string | null;
+  nin: string | null;
   accountName: string | null;
   accountNumber: string | null;
   bankName: string | null;
@@ -54,11 +56,42 @@ type FormStatus = {
   error: string;
 };
 
-export default function ProfileForm({ user }: { user: User }) {
+const STEPS = [
+  { id: "personal", label: "Personal", icon: User },
+  { id: "address", label: "Address", icon: MapPin },
+  { id: "identification", label: "Identification", icon: IdCard },
+  { id: "banking", label: "Banking", icon: Landmark },
+] as const;
+
+function renderSuccessAlert(saved: boolean) {
+  if (!saved) return null;
+  return (
+    <Alert className="bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800">
+      <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+      <AlertDescription className="text-emerald-700 dark:text-emerald-300">
+        Changes saved successfully!
+      </AlertDescription>
+    </Alert>
+  );
+}
+
+function renderErrorAlert(error: string) {
+  if (!error) return null;
+  return (
+    <Alert variant="destructive">
+      <AlertCircle className="h-4 w-4" />
+      <AlertDescription>{error}</AlertDescription>
+    </Alert>
+  );
+}
+
+export default function ProfileForm({ user }: { user: UserData }) {
   const router = useRouter();
 
-  // Profile form state
-  const [profile, setProfile] = useState({
+  const [currentStep, setCurrentStep] = useState(0);
+  const isLastStep = currentStep === STEPS.length - 1;
+
+  const [formData, setFormData] = useState({
     name: user.name || "",
     email: user.email,
     phone: user.phone || "",
@@ -68,29 +101,19 @@ export default function ProfileForm({ user }: { user: User }) {
     state: user.state || "",
     zipCode: user.zipCode || "",
     country: user.country || "",
-  });
-
-  // Banking form state
-  const [banking, setBanking] = useState({
+    nin: user.nin || "",
     accountName: user.accountName || "",
     accountNumber: user.accountNumber || "",
     bankName: user.bankName || "",
   });
 
-  // Password form state
   const [password, setPassword] = useState({
     current: "",
     new: "",
     confirm: "",
   });
 
-  const [profileStatus, setProfileStatus] = useState<FormStatus>({
-    loading: false,
-    saved: false,
-    error: "",
-  });
-
-  const [bankingStatus, setBankingStatus] = useState<FormStatus>({
+  const [stepStatus, setStepStatus] = useState<FormStatus>({
     loading: false,
     saved: false,
     error: "",
@@ -102,90 +125,93 @@ export default function ProfileForm({ user }: { user: User }) {
     error: "",
   });
 
-  const handleProfileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setProfile({ ...profile, [e.target.name]: e.target.value });
-  };
-
-  const handleBankingChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setBanking({ ...banking, [e.target.name]: e.target.value });
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setPassword({ ...password, [e.target.name]: e.target.value });
   };
 
-  const handleProfileSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setProfileStatus({ ...profileStatus, error: "", loading: true });
+  const validateStep = (step: number): string | null => {
+    if (step === 0) {
+      if (!formData.name.trim()) return "Full name is required";
+      if (!isValidEmail(formData.email))
+        return "Please enter a valid email address";
+    }
+    if (step === 2) {
+      if (!formData.nin.trim())
+        return "National Identification Number (NIN) is required";
+      if (!isValidNIN(formData.nin)) return "NIN must be exactly 11 digits";
+    }
+    if (step === 3) {
+      if (!formData.accountName.trim())
+        return "Account holder name is required";
+      if (!formData.accountNumber.trim()) return "Account number is required";
+      if (!formData.bankName.trim()) return "Bank name is required";
+    }
+    return null;
+  };
 
-    if (!isValidEmail(profile.email)) {
-      setProfileStatus({
-        loading: false,
-        saved: false,
-        error: "Please enter a valid email address",
-      });
+  const goNext = () => {
+    const error = validateStep(currentStep);
+    if (error) {
+      setStepStatus({ loading: false, saved: false, error });
       return;
     }
+    setStepStatus({ loading: false, saved: false, error: "" });
+    setCurrentStep((s) => Math.min(STEPS.length - 1, s + 1));
+  };
 
-    try {
-      const res = await fetch("/api/profile", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(profile),
-      });
-      const data = await res.json();
+  const goBack = () => {
+    setStepStatus({ loading: false, saved: false, error: "" });
+    setCurrentStep((s) => Math.max(0, s - 1));
+  };
 
-      if (!res.ok) {
-        setProfileStatus({
-          loading: false,
-          saved: false,
-          error: data.error || "Something went wrong",
-        });
-      } else {
-        setProfileStatus({ loading: false, saved: true, error: "" });
-        setTimeout(
-          () => setProfileStatus((prev) => ({ ...prev, saved: false })),
-          3000
-        );
-        router.refresh();
-      }
-    } catch {
-      setProfileStatus({
-        loading: false,
-        saved: false,
-        error: "Something went wrong. Please try again.",
-      });
+  const goToStep = (index: number) => {
+    // Only allow jumping backward freely, or forward one step at a time
+    // through validation, so someone can't skip the required NIN step.
+    if (index <= currentStep) {
+      setStepStatus({ loading: false, saved: false, error: "" });
+      setCurrentStep(index);
     }
   };
 
-  const handleBankingSubmit = async (e: React.FormEvent) => {
+  const handleFinalSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setBankingStatus({ ...bankingStatus, error: "", loading: true });
+
+    const error = validateStep(currentStep);
+    if (error) {
+      setStepStatus({ loading: false, saved: false, error });
+      return;
+    }
+
+    setStepStatus({ loading: true, saved: false, error: "" });
 
     try {
       const res = await fetch("/api/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(banking),
+        body: JSON.stringify(formData),
       });
       const data = await res.json();
 
       if (!res.ok) {
-        setBankingStatus({
+        setStepStatus({
           loading: false,
           saved: false,
           error: data.error || "Something went wrong",
         });
       } else {
-        setBankingStatus({ loading: false, saved: true, error: "" });
+        setStepStatus({ loading: false, saved: true, error: "" });
         setTimeout(
-          () => setBankingStatus((prev) => ({ ...prev, saved: false })),
+          () => setStepStatus((prev) => ({ ...prev, saved: false })),
           3000
         );
         router.refresh();
       }
     } catch {
-      setBankingStatus({
+      setStepStatus({
         loading: false,
         saved: false,
         error: "Something went wrong. Please try again.",
@@ -251,215 +277,364 @@ export default function ProfileForm({ user }: { user: User }) {
     }
   };
 
-  const renderSuccessAlert = (saved: boolean) => {
-    if (!saved) return null;
-    return (
-      <Alert className="bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800">
-        <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-        <AlertDescription className="text-emerald-700 dark:text-emerald-300">
-          Changes saved successfully!
-        </AlertDescription>
-      </Alert>
-    );
-  };
-
-  const renderErrorAlert = (error: string) => {
-    if (!error) return null;
-    return (
-      <Alert variant="destructive">
-        <AlertCircle className="h-4 w-4" />
-        <AlertDescription>{error}</AlertDescription>
-      </Alert>
-    );
-  };
-
   return (
     <div className="flex min-h-screen">
-      {/* Main Content */}
       <div className="flex-1 overflow-auto">
         <div className="max-w-3xl mx-auto p-6 space-y-6">
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-              Profile Settings
-            </h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            Profile Settings
+          </h1>
+
+          {/* Step indicator */}
+          <div className="flex items-center">
+            {STEPS.map((step, index) => {
+              const Icon = step.icon;
+              const isActive = index === currentStep;
+              const isComplete = index < currentStep;
+              const isClickable = index <= currentStep;
+
+              return (
+                <div
+                  key={step.id}
+                  className="flex items-center flex-1 last:flex-none"
+                >
+                  <button
+                    type="button"
+                    onClick={() => goToStep(index)}
+                    disabled={!isClickable}
+                    className="flex flex-col items-center gap-1.5 group"
+                  >
+                    <div
+                      className={`h-10 w-10 rounded-full flex items-center justify-center border-2 transition-colors duration-200 ${
+                        isComplete
+                          ? "bg-emerald-600 border-emerald-600 text-white"
+                          : isActive
+                          ? "border-blue-600 text-blue-600 dark:text-blue-400"
+                          : "border-gray-300 dark:border-neutral-700 text-gray-400 dark:text-gray-500"
+                      }`}
+                    >
+                      {isComplete ? (
+                        <Check className="h-5 w-5" />
+                      ) : (
+                        <Icon className="h-5 w-5" />
+                      )}
+                    </div>
+                    <span
+                      className={`text-xs font-medium whitespace-nowrap ${
+                        isActive
+                          ? "text-blue-600 dark:text-blue-400"
+                          : isComplete
+                          ? "text-emerald-600 dark:text-emerald-400"
+                          : "text-gray-400 dark:text-gray-500"
+                      }`}
+                    >
+                      {step.label}
+                    </span>
+                  </button>
+
+                  {index < STEPS.length - 1 && (
+                    <div
+                      className={`flex-1 h-0.5 mx-2 mb-5 transition-colors duration-200 ${
+                        index < currentStep
+                          ? "bg-emerald-600"
+                          : "bg-gray-200 dark:bg-neutral-700"
+                      }`}
+                    />
+                  )}
+                </div>
+              );
+            })}
           </div>
 
-          <Tabs defaultValue="profile" className="space-y-4">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="profile" className="flex items-center gap-2">
-                <UserPen className="h-4 w-4" />
-                <span className="hidden sm:inline">Profile</span>
-              </TabsTrigger>
-              <TabsTrigger value="banking" className="flex items-center gap-2">
-                <Landmark className="h-4 w-4" />
-                <span className="hidden sm:inline">Banking</span>
-              </TabsTrigger>
-              <TabsTrigger value="security" className="flex items-center gap-2">
-                <LockKeyhole className="h-4 w-4" />
-                <span className="hidden sm:inline">Password</span>
-              </TabsTrigger>
-            </TabsList>
+          <form onSubmit={handleFinalSubmit}>
+            <Card>
+              {currentStep === 0 && (
+                <>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <User className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                      Personal Information
+                    </CardTitle>
+                    <CardDescription>
+                      Your name and how we can reach you.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="name">Full Name *</Label>
+                      <Input
+                        id="name"
+                        name="name"
+                        value={formData.name}
+                        onChange={handleChange}
+                        placeholder="John Doe"
+                        required
+                      />
+                    </div>
 
-            {/* Profile Tab */}
-            <TabsContent value="profile">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <User className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                    Personal Information
-                  </CardTitle>
-                  <CardDescription>
-                    Update your personal details and contact information
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <form onSubmit={handleProfileSubmit} className="space-y-6">
-                    <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Email Address *</Label>
+                      <Input
+                        id="email"
+                        name="email"
+                        type="email"
+                        value={formData.email}
+                        onChange={handleChange}
+                        placeholder="john@example.com"
+                        required
+                      />
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Changing your email will require re-verifying the new
+                        address.
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label
+                        htmlFor="phone"
+                        className="flex items-center gap-2"
+                      >
+                        <Phone className="h-4 w-4 text-gray-500" />
+                        Phone Number
+                      </Label>
+                      <Input
+                        id="phone"
+                        name="phone"
+                        type="tel"
+                        value={formData.phone}
+                        onChange={handleChange}
+                        placeholder="+234 800 000 0000"
+                      />
+                    </div>
+                  </CardContent>
+                </>
+              )}
+
+              {currentStep === 1 && (
+                <>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <MapPin className="h-5 w-5 text-violet-600 dark:text-violet-400" />
+                      Address
+                    </CardTitle>
+                    <CardDescription>Where you're based.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="streetAddress">Street Address</Label>
+                      <Input
+                        id="streetAddress"
+                        name="streetAddress"
+                        value={formData.streetAddress}
+                        onChange={handleChange}
+                        placeholder="123 Main Street"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="apartment">Apartment, Suite, etc.</Label>
+                      <Input
+                        id="apartment"
+                        name="apartment"
+                        value={formData.apartment}
+                        onChange={handleChange}
+                        placeholder="Apt 4B"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="name">Full Name *</Label>
+                        <Label htmlFor="city">City</Label>
                         <Input
-                          id="name"
-                          name="name"
-                          value={profile.name}
-                          onChange={handleProfileChange}
-                          placeholder="John Doe"
-                          required
+                          id="city"
+                          name="city"
+                          value={formData.city}
+                          onChange={handleChange}
+                          placeholder="Lagos"
                         />
                       </div>
-
                       <div className="space-y-2">
-                        <Label htmlFor="email">Email Address *</Label>
+                        <Label htmlFor="state">State / Province</Label>
                         <Input
-                          id="email"
-                          name="email"
-                          type="email"
-                          value={profile.email}
-                          onChange={handleProfileChange}
-                          placeholder="john@example.com"
-                          required
+                          id="state"
+                          name="state"
+                          value={formData.state}
+                          onChange={handleChange}
+                          placeholder="Lagos State"
                         />
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          Changing your email will require re-verifying the new
-                          address.
-                        </p>
                       </div>
+                    </div>
 
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="zipCode">ZIP / Postal Code</Label>
+                        <Input
+                          id="zipCode"
+                          name="zipCode"
+                          value={formData.zipCode}
+                          onChange={handleChange}
+                          placeholder="100001"
+                        />
+                      </div>
                       <div className="space-y-2">
                         <Label
-                          htmlFor="phone"
+                          htmlFor="country"
                           className="flex items-center gap-2"
                         >
-                          <Phone className="h-4 w-4 text-gray-500" />
-                          Phone Number
+                          <Globe className="h-4 w-4 text-gray-500" />
+                          Country
                         </Label>
                         <Input
-                          id="phone"
-                          name="phone"
-                          type="tel"
-                          value={profile.phone}
-                          onChange={handleProfileChange}
-                          placeholder="+1 (555) 000-0000"
+                          id="country"
+                          name="country"
+                          value={formData.country}
+                          onChange={handleChange}
+                          placeholder="Nigeria"
                         />
                       </div>
                     </div>
+                  </CardContent>
+                </>
+              )}
 
-                    <div className="space-y-4 pt-6 border-t border-gray-200 dark:border-neutral-700">
-                      <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide flex items-center gap-2">
-                        <MapPin className="h-4 w-4" />
-                        Address
-                      </h3>
+              {currentStep === 2 && (
+                <>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <IdCard className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                      Identification
+                    </CardTitle>
+                    <CardDescription>
+                      Required for identity verification and commission payouts.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="nin">
+                        National Identification Number (NIN) *
+                      </Label>
+                      <Input
+                        id="nin"
+                        name="nin"
+                        value={formData.nin}
+                        onChange={handleChange}
+                        placeholder="12345678901"
+                        inputMode="numeric"
+                        maxLength={11}
+                        required
+                      />
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Your 11-digit NIN. This is kept private and used only
+                        for identity verification.
+                      </p>
+                    </div>
+                  </CardContent>
+                </>
+              )}
 
-                      <div className="space-y-2">
-                        <Label htmlFor="streetAddress">Street Address</Label>
-                        <Input
-                          id="streetAddress"
-                          name="streetAddress"
-                          value={profile.streetAddress}
-                          onChange={handleProfileChange}
-                          placeholder="123 Main Street"
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="apartment">
-                          Apartment, Suite, etc.
-                        </Label>
-                        <Input
-                          id="apartment"
-                          name="apartment"
-                          value={profile.apartment}
-                          onChange={handleProfileChange}
-                          placeholder="Apt 4B"
-                        />
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="city">City</Label>
-                          <Input
-                            id="city"
-                            name="city"
-                            value={profile.city}
-                            onChange={handleProfileChange}
-                            placeholder="New York"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="state">State / Province</Label>
-                          <Input
-                            id="state"
-                            name="state"
-                            value={profile.state}
-                            onChange={handleProfileChange}
-                            placeholder="NY"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="zipCode">ZIP / Postal Code</Label>
-                          <Input
-                            id="zipCode"
-                            name="zipCode"
-                            value={profile.zipCode}
-                            onChange={handleProfileChange}
-                            placeholder="10001"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label
-                            htmlFor="country"
-                            className="flex items-center gap-2"
-                          >
-                            <Globe className="h-4 w-4 text-gray-500" />
-                            Country
-                          </Label>
-                          <Input
-                            id="country"
-                            name="country"
-                            value={profile.country}
-                            onChange={handleProfileChange}
-                            placeholder="United States"
-                          />
-                        </div>
-                      </div>
+              {currentStep === 3 && (
+                <>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Landmark className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                      Banking Details
+                    </CardTitle>
+                    <CardDescription>
+                      Used for commission payouts. Kept private and never
+                      shared.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label
+                        htmlFor="accountName"
+                        className="flex items-center gap-2"
+                      >
+                        <User className="h-4 w-4 text-gray-500" />
+                        Account Holder Name *
+                      </Label>
+                      <Input
+                        id="accountName"
+                        name="accountName"
+                        value={formData.accountName}
+                        onChange={handleChange}
+                        placeholder="John Doe"
+                        required
+                      />
                     </div>
 
-                    {renderErrorAlert(profileStatus.error)}
-                    {renderSuccessAlert(profileStatus.saved)}
+                    <div className="space-y-2">
+                      <Label
+                        htmlFor="accountNumber"
+                        className="flex items-center gap-2"
+                      >
+                        <CreditCard className="h-4 w-4 text-gray-500" />
+                        Account Number *
+                      </Label>
+                      <Input
+                        id="accountNumber"
+                        name="accountNumber"
+                        type="text"
+                        value={formData.accountNumber}
+                        onChange={handleChange}
+                        placeholder="1234567890"
+                        autoComplete="off"
+                        required
+                      />
+                    </div>
 
-                    <Button
-                      type="submit"
-                      className="w-full sm:w-auto"
-                      disabled={profileStatus.loading}
-                    >
-                      {profileStatus.loading ? (
+                    <div className="space-y-2">
+                      <Label
+                        htmlFor="bankName"
+                        className="flex items-center gap-2"
+                      >
+                        <Banknote className="h-4 w-4 text-gray-500" />
+                        Bank Name *
+                      </Label>
+                      <Input
+                        id="bankName"
+                        name="bankName"
+                        value={formData.bankName}
+                        onChange={handleChange}
+                        placeholder="GTBank"
+                        required
+                      />
+                    </div>
+
+                    <Alert className="bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800">
+                      <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                      <AlertDescription className="text-blue-700 dark:text-blue-300">
+                        Your banking details are encrypted and securely stored.
+                        They will only be used for commission payments.
+                      </AlertDescription>
+                    </Alert>
+                  </CardContent>
+                </>
+              )}
+
+              <CardContent className="pt-0 space-y-4">
+                {renderErrorAlert(stepStatus.error)}
+                {renderSuccessAlert(stepStatus.saved)}
+
+                <div className="flex items-center justify-between pt-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={goBack}
+                    disabled={currentStep === 0 || stepStatus.loading}
+                  >
+                    <ChevronLeft className="mr-1 h-4 w-4" />
+                    Back
+                  </Button>
+
+                  {isLastStep ? (
+                    <Button type="submit" disabled={stepStatus.loading}>
+                      {stepStatus.loading ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                           Saving...
                         </>
-                      ) : profileStatus.saved ? (
+                      ) : stepStatus.saved ? (
                         <>
                           <Check className="mr-2 h-4 w-4" />
                           Saved!
@@ -468,202 +643,98 @@ export default function ProfileForm({ user }: { user: User }) {
                         "Save Profile"
                       )}
                     </Button>
-                  </form>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* Banking Tab */}
-            <TabsContent value="banking">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Landmark className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-                    Banking Details
-                  </CardTitle>
-                  <CardDescription>
-                    Used for commission payouts. Kept private and never shared.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <form onSubmit={handleBankingSubmit} className="space-y-6">
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <Label
-                          htmlFor="accountName"
-                          className="flex items-center gap-2"
-                        >
-                          <User className="h-4 w-4 text-gray-500" />
-                          Account Holder Name *
-                        </Label>
-                        <Input
-                          id="accountName"
-                          name="accountName"
-                          value={banking.accountName}
-                          onChange={handleBankingChange}
-                          placeholder="John Doe"
-                          required
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label
-                          htmlFor="accountNumber"
-                          className="flex items-center gap-2"
-                        >
-                          <CreditCard className="h-4 w-4 text-gray-500" />
-                          Account Number *
-                        </Label>
-                        <Input
-                          id="accountNumber"
-                          name="accountNumber"
-                          type="text"
-                          value={banking.accountNumber}
-                          onChange={handleBankingChange}
-                          placeholder="1234567890"
-                          autoComplete="off"
-                          required
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label
-                          htmlFor="bankName"
-                          className="flex items-center gap-2"
-                        >
-                          <Banknote className="h-4 w-4 text-gray-500" />
-                          Bank Name *
-                        </Label>
-                        <Input
-                          id="bankName"
-                          name="bankName"
-                          value={banking.bankName}
-                          onChange={handleBankingChange}
-                          placeholder="Chase Bank"
-                          required
-                        />
-                      </div>
-
-                      <Alert className="bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800">
-                        <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                        <AlertDescription className="text-blue-700 dark:text-blue-300">
-                          Your banking details are encrypted and securely
-                          stored. They will only be used for commission
-                          payments.
-                        </AlertDescription>
-                      </Alert>
-                    </div>
-
-                    {renderErrorAlert(bankingStatus.error)}
-                    {renderSuccessAlert(bankingStatus.saved)}
-
-                    <Button
-                      type="submit"
-                      className="w-full sm:w-auto"
-                      disabled={bankingStatus.loading}
-                    >
-                      {bankingStatus.loading ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Saving...
-                        </>
-                      ) : bankingStatus.saved ? (
-                        <>
-                          <Check className="mr-2 h-4 w-4" />
-                          Saved!
-                        </>
-                      ) : (
-                        "Save Banking Details"
-                      )}
+                  ) : (
+                    <Button type="button" onClick={goNext}>
+                      Next
+                      <ChevronRight className="ml-1 h-4 w-4" />
                     </Button>
-                  </form>
-                </CardContent>
-              </Card>
-            </TabsContent>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </form>
 
-            {/* Security Tab */}
-            <TabsContent value="security">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <LockKeyhole className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-                    Change Password
-                  </CardTitle>
-                  <CardDescription>
-                    Update your password to keep your account secure
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <form onSubmit={handlePasswordSubmit} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="current">Current Password</Label>
-                      <Input
-                        id="current"
-                        name="current"
-                        type="password"
-                        value={password.current}
-                        onChange={handlePasswordChange}
-                        placeholder="Enter current password"
-                        required
-                      />
-                    </div>
+          {/* Password change — separate from the profile wizard, since it's
+              a distinct action rather than profile data to step through. */}
+          {/* <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <LockKeyhole className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                Change Password
+              </CardTitle>
+              <CardDescription>
+                Update your password to keep your account secure.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handlePasswordSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="current">Current Password</Label>
+                  <Input
+                    id="current"
+                    name="current"
+                    type="password"
+                    value={password.current}
+                    onChange={handlePasswordChange}
+                    placeholder="Enter current password"
+                    required
+                  />
+                </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="new">New Password</Label>
-                      <Input
-                        id="new"
-                        name="new"
-                        type="password"
-                        value={password.new}
-                        onChange={handlePasswordChange}
-                        placeholder="Enter new password"
-                        required
-                      />
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
-                        At least 8 characters, one uppercase letter, one number.
-                      </p>
-                    </div>
+                <div className="space-y-2">
+                  <Label htmlFor="new">New Password</Label>
+                  <Input
+                    id="new"
+                    name="new"
+                    type="password"
+                    value={password.new}
+                    onChange={handlePasswordChange}
+                    placeholder="Enter new password"
+                    required
+                  />
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    At least 8 characters, one uppercase letter, one number.
+                  </p>
+                </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="confirm">Confirm New Password</Label>
-                      <Input
-                        id="confirm"
-                        name="confirm"
-                        type="password"
-                        value={password.confirm}
-                        onChange={handlePasswordChange}
-                        placeholder="Confirm new password"
-                        required
-                      />
-                    </div>
+                <div className="space-y-2">
+                  <Label htmlFor="confirm">Confirm New Password</Label>
+                  <Input
+                    id="confirm"
+                    name="confirm"
+                    type="password"
+                    value={password.confirm}
+                    onChange={handlePasswordChange}
+                    placeholder="Confirm new password"
+                    required
+                  />
+                </div>
 
-                    {renderErrorAlert(passwordStatus.error)}
-                    {renderSuccessAlert(passwordStatus.saved)}
+                {renderErrorAlert(passwordStatus.error)}
+                {renderSuccessAlert(passwordStatus.saved)}
 
-                    <Button
-                      type="submit"
-                      className="w-full sm:w-auto"
-                      disabled={passwordStatus.loading}
-                    >
-                      {passwordStatus.loading ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Updating...
-                        </>
-                      ) : passwordStatus.saved ? (
-                        <>
-                          <Check className="mr-2 h-4 w-4" />
-                          Updated!
-                        </>
-                      ) : (
-                        "Update Password"
-                      )}
-                    </Button>
-                  </form>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
+                <Button
+                  type="submit"
+                  className="w-full sm:w-auto"
+                  disabled={passwordStatus.loading}
+                >
+                  {passwordStatus.loading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Updating...
+                    </>
+                  ) : passwordStatus.saved ? (
+                    <>
+                      <Check className="mr-2 h-4 w-4" />
+                      Updated!
+                    </>
+                  ) : (
+                    "Update Password"
+                  )}
+                </Button>
+              </form>
+            </CardContent>
+          </Card> */}
         </div>
       </div>
     </div>

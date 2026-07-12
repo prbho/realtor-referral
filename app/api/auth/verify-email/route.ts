@@ -2,13 +2,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+function redirectTo(path: string) {
+  // Build the redirect from NEXTAUTH_URL instead of request.url — behind a
+  // reverse proxy, request.url reflects the internal Host header the app
+  // sees (e.g. localhost:3000), not the public-facing domain.
+  const base = process.env.NEXTAUTH_URL || "";
+  return NextResponse.redirect(new URL(path, base));
+}
+
 export async function GET(request: NextRequest) {
   const token = request.nextUrl.searchParams.get("token");
 
   if (!token) {
-    return NextResponse.redirect(
-      new URL("/login?error=InvalidToken", request.url)
-    );
+    return redirectTo("/login?error=InvalidToken");
   }
 
   const verificationToken = await prisma.verificationToken.findUnique({
@@ -16,9 +22,7 @@ export async function GET(request: NextRequest) {
   });
 
   if (!verificationToken || verificationToken.expires < new Date()) {
-    return NextResponse.redirect(
-      new URL("/login?error=ExpiredToken", request.url)
-    );
+    return redirectTo("/login?error=ExpiredToken");
   }
 
   await prisma.user.update({
@@ -28,7 +32,5 @@ export async function GET(request: NextRequest) {
 
   await prisma.verificationToken.delete({ where: { token } });
 
-  return NextResponse.redirect(
-    new URL("/login?verified=true&completeProfile=true", request.url)
-  );
+  return redirectTo("/login?verified=true&completeProfile=true");
 }

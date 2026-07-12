@@ -19,9 +19,8 @@ model User {
   role          Role      @default(USER)
   referralCode  String?   @unique // For generating referral links
   emailVerified DateTime?
-
-   phone         String?
- 
+  phone         String?
+  nin           String? @unique
   streetAddress String?
   apartment     String?
   city          String?
