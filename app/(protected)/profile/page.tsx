@@ -31,6 +31,10 @@ export default async function ProfilePage() {
       accountName: true,
       accountNumber: true,
       bankName: true,
+      nin: true,
+      image: true,
+      emailNotifications: true,
+      marketingEmails: true,
     },
   });
 
