@@ -19,19 +19,51 @@ import {
   AlertCircle,
   Mail,
 } from "lucide-react";
+import Image from "next/image";
 
 export const metadata = {
   title: "Dashboard | Regal PDC Realtor",
 };
 
-function initials(name: string | null) {
-  if (!name) return "?";
-  return name
-    .split(" ")
-    .map((p) => p[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
+function UserAvatar({
+  src,
+  name,
+  size = 32,
+}: {
+  src: string | null;
+  name: string | null;
+  size?: number;
+}) {
+  const initials = name
+    ? name
+        .split(" ")
+        .map((p) => p[0])
+        .slice(0, 2)
+        .join("")
+        .toUpperCase()
+    : "?";
+
+  if (src) {
+    return (
+      <Image
+        src={src}
+        alt={name || "Avatar"}
+        width={size}
+        height={size}
+        className="inline-block rounded-full object-cover shrink-0"
+        unoptimized
+      />
+    );
+  }
+
+  return (
+    <div
+      style={{ width: size, height: size }}
+      className="inline-flex items-center justify-center rounded-full bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 text-xs font-semibold shrink-0"
+    >
+      {initials}
+    </div>
+  );
 }
 
 const REQUIRED_PROFILE_FIELDS = [
@@ -362,24 +394,31 @@ export default async function DashboardPage() {
           </div>
         ) : (
           <ul className="divide-y divide-gray-200 dark:divide-neutral-700">
-            {user.referrals.map((ref: { id: string; name: string | null; email: string; createdAt: Date }) => (
-              <li key={ref.id} className="py-3 flex items-center gap-3">
-                <div className="h-9 w-9 shrink-0 rounded-full bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 flex items-center justify-center text-xs font-semibold">
-                  {initials(ref.name)}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="font-medium text-neutral-800 dark:text-white truncate">
-                    {ref.name}
+            {user.referrals.map(
+              (ref: {
+                id: string;
+                name: string | null;
+                email: string;
+                createdAt: Date;
+              }) => (
+                <li key={ref.id} className="py-3 flex items-center gap-3">
+                  <div className="h-9 w-9 shrink-0 rounded-full bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 flex items-center justify-center text-xs font-semibold">
+                    <UserAvatar src={user.image} name={user.name} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-neutral-800 dark:text-white truncate">
+                      {ref.name}
+                    </p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                      {ref.email}
+                    </p>
+                  </div>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 shrink-0">
+                    {new Date(ref.createdAt).toLocaleDateString()}
                   </p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
-                    {ref.email}
-                  </p>
-                </div>
-                <p className="text-xs text-gray-400 dark:text-gray-500 shrink-0">
-                  {new Date(ref.createdAt).toLocaleDateString()}
-                </p>
-              </li>
-            ))}
+                </li>
+              )
+            )}
           </ul>
         )}
       </div>

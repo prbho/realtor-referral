@@ -19,6 +19,7 @@ const OPTIONAL_TEXT_FIELDS = [
   "accountName",
   "accountNumber",
   "bankName",
+  "nin",
 ] as const;
 
 export async function PATCH(request: NextRequest) {

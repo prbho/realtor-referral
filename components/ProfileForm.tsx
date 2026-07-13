@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { isValidEmail, isValidPassword, isValidNIN } from "@/lib/validation";
 import {
-  // LockKeyhole,
+  LockKeyhole,
   Check,
   Loader2,
   Landmark,
@@ -654,9 +654,8 @@ export default function ProfileForm({ user }: { user: UserData }) {
             </Card>
           </form>
 
-          {/* Password change — separate from the profile wizard, since it's
-              a distinct action rather than profile data to step through. */}
-          {/* <Card>
+          {/* Password change */}
+          <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <LockKeyhole className="h-5 w-5 text-amber-600 dark:text-amber-400" />
@@ -734,7 +733,7 @@ export default function ProfileForm({ user }: { user: UserData }) {
                 </Button>
               </form>
             </CardContent>
-          </Card> */}
+          </Card>
         </div>
       </div>
     </div>

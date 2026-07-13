@@ -1,0 +1,35 @@
+export type Role = "USER" | "REALTOR" | "ADMIN";
+
+export type Referral = {
+  id: string;
+  name: string | null;
+  email: string;
+  role: string;
+  createdAt: string;
+  image: string | null;
+  nin: string | null;
+};
+
+export type UserRow = {
+  image: string | null;
+  id: string;
+  name: string | null;
+  email: string;
+  role: Role;
+  referralCode: string | null;
+  referralCount: number;
+  commission: number;
+  createdAt: string;
+  phone: string | null;
+  streetAddress: string | null;
+  apartment: string | null;
+  city: string | null;
+  state: string | null;
+  zipCode: string | null;
+  country: string | null;
+  accountName: string | null;
+  accountNumber: string | null;
+  bankName: string | null;
+  referrals: Referral[];
+  nin: string | null;
+};

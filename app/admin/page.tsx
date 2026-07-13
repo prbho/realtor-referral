@@ -21,6 +21,8 @@ export default async function AdminPage() {
     select: {
       id: true,
       name: true,
+      image: true,
+      nin: true,
       email: true,
       role: true,
       referralCode: true,

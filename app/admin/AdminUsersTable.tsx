@@ -16,6 +16,8 @@ import {
   Loader2,
   AlertTriangle,
   LucideIcon,
+  CheckCircle2,
+  XCircle,
 } from "lucide-react";
 import {
   Select,
@@ -46,6 +48,7 @@ type Referral = {
   role: string;
   createdAt: string;
   image: string | null;
+  nin: string | null;
 };
 
 type UserRow = {
@@ -69,6 +72,7 @@ type UserRow = {
   accountNumber: string | null;
   bankName: string | null;
   referrals: Referral[];
+  nin: string | null;
 };
 
 const ROLE_OPTIONS: Role[] = ["USER", "REALTOR", "ADMIN"];
@@ -133,6 +137,47 @@ function DetailRow({ label, value }: { label: string; value: string | null }) {
         {label}
       </p>
       <p className="text-sm text-neutral-800 dark:text-white">{value || "—"}</p>
+    </div>
+  );
+}
+
+function UserAvatar({
+  src,
+  name,
+  size = 32,
+}: {
+  src: string | null;
+  name: string | null;
+  size?: number;
+}) {
+  const initials = name
+    ? name
+        .split(" ")
+        .map((p) => p[0])
+        .slice(0, 2)
+        .join("")
+        .toUpperCase()
+    : "?";
+
+  if (src) {
+    return (
+      <Image
+        src={src}
+        alt={name || "Avatar"}
+        width={size}
+        height={size}
+        className="inline-block rounded-full object-cover shrink-0"
+        unoptimized
+      />
+    );
+  }
+
+  return (
+    <div
+      style={{ width: size, height: size }}
+      className="inline-flex items-center justify-center rounded-full bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 text-xs font-semibold shrink-0"
+    >
+      {initials}
     </div>
   );
 }
@@ -218,8 +263,9 @@ export default function AdminUsersTable({
   users: UserRow[];
   currentUserId: string;
 }) {
+  const [showNIN, setShowNIN] = useState(false);
+
   const [usersState, setUsersState] = useState<UserRow[]>(users);
-  const [image, setImage] = useState(users[0]?.image);
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<"ALL" | Role>("ALL");
   const [referralUser, setReferralUser] = useState<UserRow | null>(null);
@@ -265,6 +311,7 @@ export default function AdminUsersTable({
   const openReferrals = (user: UserRow) => setReferralUser(user);
   const openProfile = (user: UserRow) => {
     setShowAccountNumber(false);
+    setShowNIN(false);
     setProfileUser(user);
   };
 
@@ -403,6 +450,12 @@ export default function AdminUsersTable({
     return `•••• ${num.slice(-4)}`;
   };
 
+  const maskedNIN = (nin: string | null) => {
+    if (!nin) return "—";
+    if (nin.length <= 4) return nin;
+    return `•••• ${nin.slice(-4)}`;
+  };
+
   const addressLine = (u: UserRow) => {
     const parts = [
       [u.streetAddress, u.apartment].filter(Boolean).join(", "),
@@ -419,7 +472,6 @@ export default function AdminUsersTable({
     { label: "Admin", value: "ADMIN" },
   ];
 
-  // Helper function to get the role badge color with the select trigger styling
   const getRoleSelectClass = (role: string) => {
     const baseClass = "text-xs font-medium rounded-full px-3 py-1 border-0";
     const colorClass = roleBadgeColor(role);
@@ -517,6 +569,7 @@ export default function AdminUsersTable({
             <TableRow className="border-b border-gray-200 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-900/50 text-left text-gray-500 dark:text-gray-400">
               <TableHead className="px-4 py-3 font-medium">Name</TableHead>
               <TableHead className="px-4 py-3 font-medium">Email</TableHead>
+              <TableHead className="px-4 py-3 font-medium">NIN</TableHead>
               <TableHead className="px-4 py-3 font-medium">Role</TableHead>
               <TableHead className="px-4 py-3 font-medium">Referrals</TableHead>
               <TableHead className="px-4 py-3 font-medium">
@@ -536,23 +589,31 @@ export default function AdminUsersTable({
                   className="border-b border-gray-200 dark:border-neutral-700 last:border-0 hover:bg-gray-50 dark:hover:bg-neutral-700/50 transition-colors duration-200"
                 >
                   <TableCell className="px-4 py-3">
-                    <Image
-                      src={image || "/avatar.png"}
-                      alt={user.name || "Avatar"}
-                      width={32}
-                      height={32}
-                      className="inline-block rounded-full mr-2"
-                      unoptimized
-                    />
-                    <button
-                      onClick={() => openProfile(user)}
-                      className="font-medium text-neutral-800 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 hover:underline text-left"
-                    >
-                      {user.name || "—"}
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <UserAvatar src={user.image} name={user.name} />
+                      <button
+                        onClick={() => openProfile(user)}
+                        className="font-medium text-neutral-800 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 hover:underline text-left"
+                      >
+                        {user.name || "—"}
+                      </button>
+                    </div>
                   </TableCell>
                   <TableCell className="px-4 py-3 text-gray-600 dark:text-gray-300">
                     {user.email}
+                  </TableCell>
+                  <TableCell className="px-4 py-3">
+                    {user.nin ? (
+                      <CheckCircle2
+                        className="h-4 w-4 text-emerald-600 dark:text-emerald-400"
+                        aria-label="NIN on file"
+                      />
+                    ) : (
+                      <XCircle
+                        className="h-4 w-4 text-gray-300 dark:text-gray-600"
+                        aria-label="No NIN on file"
+                      />
+                    )}
                   </TableCell>
                   <TableCell className="px-4 py-3">
                     <div className="flex flex-col gap-1">
@@ -634,7 +695,7 @@ export default function AdminUsersTable({
             {filteredUsers.length === 0 && (
               <TableRow>
                 <TableCell
-                  colSpan={6}
+                  colSpan={7}
                   className="px-4 py-8 text-center text-gray-500 dark:text-gray-400"
                 >
                   No users match your search.
@@ -669,16 +730,30 @@ export default function AdminUsersTable({
               className="bg-white dark:bg-neutral-800 rounded-lg shadow-md p-4 space-y-3 transition-colors duration-200"
             >
               <div className="flex justify-between items-start">
-                <div>
-                  <button
-                    onClick={() => openProfile(user)}
-                    className="font-medium text-neutral-800 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 hover:underline text-left"
-                  >
-                    {user.name || "—"}
-                  </button>
-                  <p className="text-sm text-gray-600 dark:text-gray-300">
-                    {user.email}
-                  </p>
+                <div className="flex items-start gap-2">
+                  <UserAvatar src={user.image} name={user.name} size={36} />
+                  <div>
+                    <button
+                      onClick={() => openProfile(user)}
+                      className="font-medium text-neutral-800 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 hover:underline text-left"
+                    >
+                      {user.name || "—"}
+                    </button>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                      {user.email}
+                    </p>
+                    {user.nin ? (
+                      <p className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 mt-0.5">
+                        <CheckCircle2 className="h-3 w-3" />
+                        NIN on file
+                      </p>
+                    ) : (
+                      <p className="flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                        <XCircle className="h-3 w-3" />
+                        No NIN
+                      </p>
+                    )}
+                  </div>
                 </div>
                 <div className="flex flex-col items-end gap-1">
                   <Select
@@ -821,15 +896,8 @@ export default function AdminUsersTable({
                   key={ref.id}
                   className="flex items-center justify-between border-b border-gray-200 dark:border-neutral-700 last:border-0 pb-3 last:pb-0"
                 >
-                  <div className="flex items-center">
-                    <Image
-                      src={ref.image || "/avatar.png"}
-                      alt={ref.name || "Avatar"}
-                      width={32}
-                      height={32}
-                      className="inline-block rounded-full mr-2"
-                      unoptimized
-                    />
+                  <div className="flex items-center gap-2">
+                    <UserAvatar src={ref.image} name={ref.name} />
                     <div className="flex flex-col">
                       <p className="text-sm font-medium text-neutral-800 dark:text-white">
                         {ref.name || "—"}
@@ -856,15 +924,23 @@ export default function AdminUsersTable({
       {profileUser && (
         <ModalShell isVisible={isModalVisible} onClose={closeModal}>
           <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-neutral-700">
-            <div>
-              <h2 className="font-semibold text-neutral-800 dark:text-white">
-                {profileUser.name || "—"}
-              </h2>
-              <div className="flex items-center gap-2 mt-1">
-                <RoleBadge role={profileUser.role} />
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Joined {new Date(profileUser.createdAt).toLocaleDateString()}
-                </p>
+            <div className="flex items-center gap-3">
+              <UserAvatar
+                src={profileUser.image}
+                name={profileUser.name}
+                size={40}
+              />
+              <div>
+                <h2 className="font-semibold text-neutral-800 dark:text-white">
+                  {profileUser.name || "—"}
+                </h2>
+                <div className="flex items-center gap-2 mt-1">
+                  <RoleBadge role={profileUser.role} />
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Joined{" "}
+                    {new Date(profileUser.createdAt).toLocaleDateString()}
+                  </p>
+                </div>
               </div>
             </div>
             <button
@@ -890,6 +966,31 @@ export default function AdminUsersTable({
               <div className="grid grid-cols-2 gap-3 pl-9">
                 <DetailRow label="Email" value={profileUser.email} />
                 <DetailRow label="Phone" value={profileUser.phone} />
+                <div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                    NIN (National ID)
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm text-neutral-800 dark:text-white font-mono">
+                      {showNIN
+                        ? profileUser.nin || "—"
+                        : maskedNIN(profileUser.nin)}
+                    </p>
+                    {profileUser.nin && (
+                      <button
+                        onClick={() => setShowNIN((v) => !v)}
+                        className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                        aria-label={showNIN ? "Hide NIN" : "Show NIN"}
+                      >
+                        {showNIN ? (
+                          <EyeOff className="h-3.5 w-3.5" />
+                        ) : (
+                          <Eye className="h-3.5 w-3.5" />
+                        )}
+                      </button>
+                    )}
+                  </div>
+                </div>
                 <DetailRow
                   label="Referral Code"
                   value={profileUser.referralCode}
