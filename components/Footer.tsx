@@ -5,7 +5,7 @@ export default function Footer() {
   const year = new Date().getFullYear();
 
   return (
-    <footer className="bg-white dark:bg-neutral-800 border-t border-gray-200 dark:border-neutral-700 mt-auto transition-colors duration-200">
+    <footer className="bg-white dark:bg-slate-900 border-t border-gray-200 dark:border-slate-950 mt-auto transition-colors duration-200">
       <div className="max-w-6xl mx-auto px-4 py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
         <p className="text-sm text-gray-500 dark:text-gray-400 transition-colors duration-200">
           &copy; {year} Regal PDC Ltd. All rights reserved.

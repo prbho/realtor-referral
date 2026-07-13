@@ -98,7 +98,7 @@ function SummaryCard({
   value: string;
 }) {
   return (
-    <div className="bg-white dark:bg-neutral-800 px-4 py-8 rounded-lg shadow-md transition-colors duration-200">
+    <div className="bg-white dark:bg-slate-800 px-4 py-8 rounded-lg shadow-md transition-colors duration-200">
       <div className="flex items-center gap-3">
         <div
           className={`h-9 w-9 shrink-0 rounded-full flex items-center justify-center ${color}`}
@@ -166,7 +166,7 @@ function UserAvatar({
         alt={name || "Avatar"}
         width={size}
         height={size}
-        className="inline-block rounded-full object-cover shrink-0"
+        className="inline-block rounded-full object-cover shrink-0 aspect-square"
         unoptimized
       />
     );
@@ -199,7 +199,7 @@ function ModalShell({
       onClick={onClose}
     >
       <div
-        className={`bg-white dark:bg-neutral-800 rounded-lg shadow-xl max-w-lg w-full max-h-[85vh] flex flex-col transition-all duration-150 ${
+        className={`bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-lg w-full max-h-[85vh] flex flex-col transition-all duration-150 ${
           isVisible ? "opacity-100 scale-100" : "opacity-0 scale-95"
         }`}
         onClick={(e) => e.stopPropagation()}
@@ -520,7 +520,7 @@ export default function AdminUsersTable({
           placeholder="Search by name, email, or referral code..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="flex-1 p-2 border border-gray-300 dark:border-neutral-700 rounded-md bg-white dark:bg-neutral-800 text-neutral-800 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+          className="flex-1 p-2 border border-gray-300 dark:border-neutral-700 rounded-md bg-white dark:bg-slate-800 text-neutral-800 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
         />
 
         <Select
@@ -563,10 +563,10 @@ export default function AdminUsersTable({
       </div>
 
       {/* Desktop Table View */}
-      <div className="hidden md:block bg-white dark:bg-neutral-800 rounded-lg shadow-md overflow-x-auto transition-colors duration-200">
+      <div className="hidden md:block bg-white dark:bg-slate-800 rounded-lg shadow-md overflow-x-auto transition-colors duration-200">
         <Table className="w-full text-sm min-w-3xl">
           <TableHeader>
-            <TableRow className="border-b border-gray-200 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-900/50 text-left text-gray-500 dark:text-gray-400">
+            <TableRow className="border-b border-gray-200 dark:border-neutral-700 bg-gray-50 dark:bg-slate-900/50 text-left text-gray-500 dark:text-gray-400">
               <TableHead className="px-4 py-3 font-medium">Name</TableHead>
               <TableHead className="px-4 py-3 font-medium">Email</TableHead>
               <TableHead className="px-4 py-3 font-medium">NIN</TableHead>
@@ -727,7 +727,7 @@ export default function AdminUsersTable({
           return (
             <div
               key={user.id}
-              className="bg-white dark:bg-neutral-800 rounded-lg shadow-md p-4 space-y-3 transition-colors duration-200"
+              className="bg-white dark:bg-slate-800 rounded-lg shadow-md p-4 space-y-3 transition-colors duration-200"
             >
               <div className="flex justify-between items-start">
                 <div className="flex items-start gap-2">
@@ -842,7 +842,7 @@ export default function AdminUsersTable({
         })}
 
         {filteredUsers.length === 0 && (
-          <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-md p-8 text-center text-gray-500 dark:text-gray-400">
+          <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md p-8 text-center text-gray-500 dark:text-gray-400">
             No users match your search.
           </div>
         )}
@@ -1081,7 +1081,7 @@ export default function AdminUsersTable({
           onClick={() => setPendingRoleChange(null)}
         >
           <div
-            className="bg-white dark:bg-neutral-800 rounded-lg shadow-xl max-w-sm w-full p-6"
+            className="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-sm w-full p-6"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center gap-3 mb-3">

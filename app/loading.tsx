@@ -1,7 +1,7 @@
 // app/loading.tsx
 export default function Loading() {
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-neutral-900 transition-colors duration-200">
+    <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-slate-900 transition-colors duration-200">
       <div className="flex flex-col items-center gap-4">
         <div className="relative">
           {/* Spinner */}

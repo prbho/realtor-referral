@@ -102,6 +102,7 @@ model SystemSettings {
   emailLimitEnabled Boolean  @default(true)
   emailDailyLimit   Int      @default(100)
   updatedAt         DateTime @updatedAt
+  createdAt           DateTime @default(now())
 }
  
 model EmailLog {

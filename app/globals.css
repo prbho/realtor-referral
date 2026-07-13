@@ -4,6 +4,25 @@
 
 @custom-variant dark (&:is(.dark *));
 
+.bg-grid-slate-100 {
+  background-image: linear-gradient(
+      to right,
+      rgb(241 245 249 / 0.4) 1px,
+      transparent 1px
+    ),
+    linear-gradient(to bottom, rgb(241 245 249 / 0.4) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* .dark .bg-grid-slate-100 {
+  background-image: linear-gradient(
+      to right,
+      rgb(30 41 59 / 0.2) 1px,
+      transparent 1px
+    ),
+    linear-gradient(to bottom, rgb(30 41 59 / 0.2) 1px, transparent 1px);
+} */
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

@@ -164,7 +164,7 @@ export default async function DashboardPage() {
       <div>
         <div className="flex items-center justify-between">
           <Greeting name={user.name} />
-          <span className="text-xs font-medium px-3 py-1 rounded-full bg-white dark:bg-neutral-800 border border-stone-200 dark:border-neutral-700 text-neutral-600 dark:text-gray-300">
+          <span className="text-xs font-medium px-3 py-1 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-neutral-700 text-neutral-600 dark:text-gray-300">
             {user.role}
           </span>
         </div>
@@ -200,7 +200,7 @@ export default async function DashboardPage() {
 
       {/* Admin platform overview */}
       {isAdmin && platformStats && (
-        <div className="bg-[#0b3264] dark:bg-slate-800 text-white p-6 rounded-xl shadow-md transition-colors duration-200">
+        <div className="bg-slate-900 dark:bg-slate-950 text-white p-6 rounded-xl shadow-md transition-colors duration-200">
           <div className="flex items-center justify-between mb-5">
             <h2 className="text-lg font-semibold">Platform Overview</h2>
             <Link
@@ -296,7 +296,7 @@ export default async function DashboardPage() {
                   className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${
                     platformStats.emailLimitEnabled
                       ? "bg-emerald-500/20 text-emerald-400"
-                      : "bg-gray-500/20 text-gray-400"
+                      : "bg-slate-500/20 text-gray-400"
                   }`}
                 >
                   {platformStats.emailLimitEnabled ? "ON" : "OFF"}
@@ -313,7 +313,7 @@ export default async function DashboardPage() {
 
       {/* Referral link + stats */}
       <div className="grid md:grid-cols-2 gap-6">
-        <div className="bg-white border border-stone-200 dark:border-neutral-800 dark:bg-neutral-800 p-6 rounded-xl shadow-sm transition-colors duration-200">
+        <div className="bg-white border border-slate-200 dark:border-slate-800 dark:bg-slate-800 p-6 rounded-xl shadow-sm transition-colors duration-200">
           <div className="flex items-center gap-2 mb-4">
             <div className="h-8 w-8 shrink-0 rounded-full bg-blue-50 dark:bg-blue-950/40 flex items-center justify-center">
               <Link2Icon className="h-4 w-4 text-blue-600 dark:text-blue-400" />
@@ -330,13 +330,13 @@ export default async function DashboardPage() {
               type="text"
               value={referralLink}
               readOnly
-              className="flex-1 p-2 border rounded-md text-sm bg-gray-50 dark:bg-neutral-700 dark:border-neutral-600 dark:text-white transition-colors duration-200"
+              className="flex-1 p-2 border rounded-md text-sm bg-slate-50 dark:bg-neutral-700 dark:border-neutral-600 dark:text-white transition-colors duration-200"
             />
             <CopyButton text={referralLink} />
           </div>
         </div>
 
-        <div className="bg-white border border-stone-200 dark:border-neutral-800 dark:bg-neutral-800 p-6 rounded-xl shadow-sm transition-colors duration-200">
+        <div className="bg-white border border-slate-200 dark:border-slate-800 dark:bg-slate-800 p-6 rounded-xl shadow-sm transition-colors duration-200">
           <div className="flex items-center gap-2 mb-4">
             <div className="h-8 w-8 shrink-0 rounded-full bg-emerald-50 dark:bg-emerald-950/40 flex items-center justify-center">
               <ChartNetwork className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
@@ -370,7 +370,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Referrals list */}
-      <div className="bg-white border border-stone-200 dark:border-neutral-800 dark:bg-neutral-800 p-6 rounded-xl shadow-sm transition-colors duration-200">
+      <div className="bg-white border border-slate-200 dark:border-slate-800 dark:bg-slate-800 p-6 rounded-xl shadow-sm transition-colors duration-200">
         <div className="flex items-center gap-2 mb-4">
           <div className="h-8 w-8 shrink-0 rounded-full bg-violet-50 dark:bg-violet-950/40 flex items-center justify-center">
             <UserRoundArrowLeft className="h-4 w-4 text-violet-600 dark:text-violet-400" />

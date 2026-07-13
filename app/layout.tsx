@@ -48,7 +48,7 @@ export const metadata: Metadata = {
   },
 
   openGraph: {
-    title: "Regal PDC Realtor | Real Estate Agent Referral Platform",
+    title: "Regal PDC Realtor | Real Estate Agent Platform",
     description:
       "Join Regal PDC Realtor, create your referral link, invite agents, and grow your real estate network.",
 

@@ -60,7 +60,7 @@ export default function ResetPasswordForm() {
 
   if (!token) {
     return (
-      <div className="max-w-md mx-auto mt-10 p-6 bg-white dark:bg-neutral-800 rounded-lg shadow-md transition-colors duration-200">
+      <div className="max-w-md mx-auto mt-10 bg-white dark:bg-slate-800 shadow-md transition-colors duration-200 bg-linear-to-br from-[#0b3264] to-slate-800 rounded-3xl p-12 text-white dark:from-[#0b3264] dark:to-slate-900">
         <p className="text-sm text-red-600 dark:text-red-400">
           Invalid or missing reset link.
         </p>
@@ -77,7 +77,7 @@ export default function ResetPasswordForm() {
   }
 
   return (
-    <div className="max-w-md mx-auto mt-10 p-6 bg-white dark:bg-neutral-800 rounded-lg shadow-md transition-colors duration-200">
+    <div className="max-w-md mx-auto mt-10 bg-white dark:bg-slate-800 shadow-md transition-colors duration-200 bg-linear-to-br from-[#0b3264] to-slate-800 rounded-3xl p-12 text-white dark:from-[#0b3264] dark:to-slate-900">
       <h1
         style={{ fontFamily: "var(--font-fraunces)" }}
         className="text-2xl font-bold mb-6 text-gray-900 dark:text-white"
@@ -99,7 +99,7 @@ export default function ResetPasswordForm() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full p-2 border border-gray-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-900 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors duration-200"
+              className="w-full p-2 border border-gray-300 dark:border-neutral-600 rounded-md bg-white dark:bg-slate-900 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors duration-200"
               required
             />
           </div>
@@ -112,7 +112,7 @@ export default function ResetPasswordForm() {
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full p-2 border border-gray-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-900 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors duration-200"
+              className="w-full p-2 border border-gray-300 dark:border-neutral-600 rounded-md bg-white dark:bg-slate-900 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors duration-200"
               required
             />
           </div>

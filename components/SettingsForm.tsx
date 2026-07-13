@@ -439,7 +439,7 @@ export default function SettingsForm({ user }: { user: User }) {
                 <CardContent>
                   <form onSubmit={handlePrefsSubmit} className="space-y-6">
                     <div className="space-y-4">
-                      <div className="flex items-center justify-between p-4 rounded-lg border border-gray-200 dark:border-neutral-700 hover:bg-gray-50 dark:hover:bg-neutral-800/50 transition-colors">
+                      <div className="flex items-center justify-between p-4 rounded-lg border border-gray-200 dark:border-neutral-700 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                         <div className="space-y-0.5">
                           <Label
                             htmlFor="email-notifications"
@@ -461,7 +461,7 @@ export default function SettingsForm({ user }: { user: User }) {
                         />
                       </div>
 
-                      <div className="flex items-center justify-between p-4 rounded-lg border border-gray-200 dark:border-neutral-700 hover:bg-gray-50 dark:hover:bg-neutral-800/50 transition-colors">
+                      <div className="flex items-center justify-between p-4 rounded-lg border border-gray-200 dark:border-neutral-700 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                         <div className="space-y-0.5">
                           <Label
                             htmlFor="marketing-emails"

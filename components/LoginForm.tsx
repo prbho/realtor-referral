@@ -96,7 +96,7 @@ export default function LoginForm() {
   };
 
   return (
-    <Card className="w-full max-w-sm dark:bg-neutral-800 mx-auto">
+    <Card className="w-full max-w-md mx-auto mt-10 bg-white dark:bg-slate-800 shadow-md transition-colors duration-200 bg-linear-to-br from-[#0b3264] to-slate-800 rounded-3xl p-12 text-white dark:from-[#0b3264] dark:to-slate-900">
       <CardHeader>
         <CardTitle>
           <h1
@@ -127,7 +127,7 @@ export default function LoginForm() {
               onChange={(e) =>
                 setFormData({ ...formData, email: e.target.value })
               }
-              className="w-full p-2 border border-gray-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-900 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors duration-200"
+              className="w-full p-2 border border-gray-300 dark:border-neutral-600 rounded-md bg-white dark:bg-slate-900 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors duration-200"
               required
             />
           </div>
@@ -142,7 +142,7 @@ export default function LoginForm() {
               onChange={(e) =>
                 setFormData({ ...formData, password: e.target.value })
               }
-              className="w-full p-2 border border-gray-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-900 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors duration-200"
+              className="w-full p-2 border border-gray-300 dark:border-neutral-600 rounded-md bg-white dark:bg-slate-900 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors duration-200"
               required
             />
           </div>
@@ -198,8 +198,8 @@ export default function LoginForm() {
           </button>
         </form>
       </CardContent>
-      <CardFooter className="flex-col gap-2">
-        <div className="mt-4 text-center text-sm">
+      <CardFooter className="flex-col gap-2 bg-transparent">
+        <div className="text-center text-sm">
           <span className="text-gray-600 dark:text-gray-400">
             Don&apos;t have an account?{" "}
           </span>

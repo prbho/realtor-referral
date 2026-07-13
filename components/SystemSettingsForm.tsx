@@ -76,7 +76,7 @@ export default function SystemSettingsForm({
         </p>
       </div>
 
-      <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-md p-6 transition-colors duration-200">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md p-6 transition-colors duration-200">
         <div className="flex items-center gap-3 mb-4">
           <div className="h-8 w-8 shrink-0 rounded-full bg-blue-50 dark:bg-blue-950/40 flex items-center justify-center">
             <Mail className="h-4 w-4 text-blue-600 dark:text-blue-400" />
@@ -93,7 +93,7 @@ export default function SystemSettingsForm({
         </div>
 
         {/* Today's usage */}
-        <div className="mb-5 p-4 rounded-lg bg-gray-50 dark:bg-neutral-900/50">
+        <div className="mb-5 p-4 rounded-lg bg-gray-50 dark:bg-slate-900/50">
           <div className="flex items-center justify-between mb-2">
             <p className="text-sm text-gray-600 dark:text-gray-300">
               Sent today
@@ -151,7 +151,7 @@ export default function SystemSettingsForm({
               setEmailDailyLimit(Math.max(1, parseInt(e.target.value) || 1))
             }
             disabled={!emailLimitEnabled}
-            className="w-32 p-2 border border-gray-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-900 text-gray-900 dark:text-white disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors duration-200"
+            className="w-32 p-2 border border-gray-300 dark:border-neutral-600 rounded-md bg-white dark:bg-slate-900 text-gray-900 dark:text-white disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors duration-200"
           />
           <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
             Set this a little below your provider&apos;s actual cap (e.g. 95 if
