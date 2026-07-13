@@ -35,11 +35,12 @@ export default function Header() {
       <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
         <Link href="/" className="transition-colors duration-200">
           <Image
-            width={150}
-            height={150}
+            src="/regal-pdc-ltd-logo.webp"
+            loading="eager"
+            priority
+            width={200}
+            height={100}
             alt="Regal PDC Realtors"
-            src="/regal-pdc-ltd-logo.png"
-            className="*:w-24 *:h-auto"
           />
         </Link>
 

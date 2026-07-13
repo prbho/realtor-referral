@@ -19,10 +19,11 @@ export default function Layout({
           <Link href="/" className="transition-colors duration-200">
             <Image
               width={180}
-              height={200}
+              height={155}
               alt="Regal PDC Realtors"
-              src="/regal-pdc-auth-logo.png"
-              className="*:w-24 *:h-auto"
+              src="/regal-pdc-auth-logo.webp"
+              loading="eager"
+              priority
             />
           </Link>
         </div>
