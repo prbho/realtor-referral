@@ -14,20 +14,21 @@ export default function Greeting({ name }: { name: string | null }) {
         : hour < 18
         ? "Good afternoon"
         : "Good evening";
-    // The visitor's local time is only known on the client. Computing this
-    // during render would use the server's clock/timezone instead and cause
-    // a mismatch between server- and client-rendered output, so it must be
-    // deferred to an effect rather than computed synchronously during render.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setGreeting(nextGreeting);
   }, []);
+
+  // Get first name (split by space and take first part)
+  const getFirstName = (fullName: string | null) => {
+    if (!fullName) return "there";
+    return fullName.split(" ")[0];
+  };
 
   return (
     <h1
       style={{ fontFamily: "var(--font-fraunces)" }}
       className="text-xl font-bold"
     >
-      {greeting}, {name || "there"}!
+      {greeting}, {getFirstName(name)}!
     </h1>
   );
 }
