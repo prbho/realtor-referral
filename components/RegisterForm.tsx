@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { isValidEmail, isValidPassword } from "@/lib/validation";
+import { Eye, EyeOff } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -27,6 +28,7 @@ export default function RegisterForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [referrerName, setReferrerName] = useState<string | null>(null);
   const [referrerLoading, setReferrerLoading] = useState(!!referralCode);
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     if (!referralCode) return;
@@ -167,15 +169,29 @@ export default function RegisterForm() {
               <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">
                 Password
               </label>
-              <input
-                type="password"
-                value={formData.password}
-                onChange={(e) =>
-                  setFormData({ ...formData, password: e.target.value })
-                }
-                className="w-full p-2.5 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors duration-200"
-                required
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={formData.password}
+                  onChange={(e) =>
+                    setFormData({ ...formData, password: e.target.value })
+                  }
+                  className="w-full p-2.5 pr-10 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors duration-200"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                 At least 8 characters, one uppercase letter, one number.
               </p>
