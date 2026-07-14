@@ -7,7 +7,7 @@ export default function Layout({
   children: React.ReactNode;
 }>) {
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors duration-200">
+    <div className="bg-white dark:bg-[#0d1117] transition-colors duration-300">
       <Header />
       <main className="min-h-full flex flex-col">{children}</main>
       <Footer />

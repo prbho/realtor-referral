@@ -1,4 +1,3 @@
-// app/admin/page.tsx
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { authOptions } from "../api/auth/[...nextauth]/route";
@@ -39,6 +38,14 @@ export default async function AdminPage() {
       accountName: true,
       accountNumber: true,
       bankName: true,
+      isSuperAdmin: true,
+      // Include the referrer relation
+      referrer: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
       referrals: {
         select: {
           id: true,
@@ -52,9 +59,18 @@ export default async function AdminPage() {
     },
   });
 
+  // Transform data to match the expected shape (referredBy as object or null)
+  const transformedUsers = users.map((user: (typeof users)[0]) => {
+    const { referrer, ...rest } = user;
+    return {
+      ...rest,
+      referredBy: referrer ? { id: referrer.id, name: referrer.name } : null,
+    };
+  });
+
   return (
     <AdminUsersTable
-      users={JSON.parse(JSON.stringify(users))}
+      users={JSON.parse(JSON.stringify(transformedUsers))}
       currentUserId={session.user.id}
     />
   );

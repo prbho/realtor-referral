@@ -19,10 +19,22 @@ export async function PATCH(
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
-    if (session.user.role !== "ADMIN") {
+    // Get current user with full details
+    const currentUser = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { id: true, role: true, isSuperAdmin: true },
+    });
+
+    if (!currentUser) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    // Check if user is admin or super admin
+    if (currentUser.role !== "ADMIN" && !currentUser.isSuperAdmin) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    // Prevent changing own role
     if (userId === session.user.id) {
       return NextResponse.json(
         { error: "You cannot change your own role" },
@@ -36,18 +48,49 @@ export async function PATCH(
       return NextResponse.json({ error: "Invalid role" }, { status: 400 });
     }
 
-    const targetUser = await prisma.user.findUnique({ where: { id: userId } });
+    // Get target user
+    const targetUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, isSuperAdmin: true, role: true },
+    });
+
     if (!targetUser) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    // Prevent modifying a super admin
+    if (targetUser.isSuperAdmin) {
+      return NextResponse.json(
+        { error: "Cannot modify a super admin's role" },
+        { status: 403 }
+      );
+    }
+
+    // Only super admins can assign ADMIN role
+    if (role === "ADMIN" && !currentUser.isSuperAdmin) {
+      return NextResponse.json(
+        { error: "Only super admins can assign admin roles" },
+        { status: 403 }
+      );
     }
 
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: { role },
-      select: { id: true, name: true, email: true, role: true },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        isSuperAdmin: true,
+      },
     });
 
-    return NextResponse.json({ success: true, user: updatedUser });
+    return NextResponse.json({
+      success: true,
+      message: `User role updated to ${role}`,
+      user: updatedUser,
+    });
   } catch (error) {
     console.error("Role update error:", error);
     return NextResponse.json(

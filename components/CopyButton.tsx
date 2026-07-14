@@ -20,7 +20,7 @@ export default function CopyButton({ text }: { text: string }) {
   return (
     <button
       onClick={handleCopy}
-      className={`flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${
+      className={`flex shrink-0  items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${
         copied
           ? "bg-emerald-600 text-white"
           : "bg-[#0b3264] text-white hover:bg-blue-700"

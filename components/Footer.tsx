@@ -25,7 +25,7 @@ export default function Footer() {
             Profile
           </Link>
           <a
-            href="mailto:support@example.com"
+            href="mailto:info@regalpdc.com"
             className="hover:text-neutral-800 dark:hover:text-white transition-colors duration-200"
           >
             Support

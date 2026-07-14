@@ -1,4 +1,3 @@
-// app/login/LoginForm.tsx
 "use client";
 
 import { useState } from "react";
@@ -96,29 +95,33 @@ export default function LoginForm() {
   };
 
   return (
-    <Card className="w-full max-w-md mx-auto mt-10 bg-white dark:bg-slate-800 shadow-md transition-colors duration-200 bg-linear-to-br from-[#0b3264] to-slate-800 rounded-3xl p-12 text-white dark:from-[#0b3264] dark:to-slate-900">
-      <CardHeader>
+    <Card className="w-full max-w-md mx-auto mt-10 bg-white dark:bg-[#161b22] border border-slate-200 dark:border-slate-700/50 shadow-sm rounded-xl transition-colors duration-300">
+      <CardHeader className="space-y-1">
         <CardTitle>
           <h1
             style={{ fontFamily: "var(--font-fraunces)" }}
-            className="text-2xl font-bold mb-6 text-gray-900 dark:text-white"
+            className="text-2xl font-bold text-slate-900 dark:text-white"
           >
             Sign In
           </h1>
         </CardTitle>
+        <p className="text-sm text-slate-500 dark:text-slate-400">
+          Welcome back! Sign in to manage your account.
+        </p>
 
         {verified && (
-          <div className="text-sm text-green-700 dark:text-green-300 bg-green-50 dark:bg-green-900/30 p-2 rounded mb-4 transition-colors duration-200">
+          <div className="mt-2 text-sm text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-900/30 p-3 rounded-md transition-colors duration-200">
             {completeProfile
               ? "Email verified! Sign in to finish setting up your profile."
               : "Email verified! You can now sign in."}
           </div>
         )}
       </CardHeader>
+
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+            <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">
               Email
             </label>
             <input
@@ -127,13 +130,13 @@ export default function LoginForm() {
               onChange={(e) =>
                 setFormData({ ...formData, email: e.target.value })
               }
-              className="w-full p-2 border border-gray-300 dark:border-neutral-600 rounded-md bg-white dark:bg-slate-900 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors duration-200"
+              className="w-full p-2.5 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors duration-200"
               required
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+            <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">
               Password
             </label>
             <input
@@ -142,18 +145,18 @@ export default function LoginForm() {
               onChange={(e) =>
                 setFormData({ ...formData, password: e.target.value })
               }
-              className="w-full p-2 border border-gray-300 dark:border-neutral-600 rounded-md bg-white dark:bg-slate-900 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors duration-200"
+              className="w-full p-2.5 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors duration-200"
               required
             />
           </div>
 
           <div className="flex items-center justify-between text-sm">
-            <label className="flex items-center gap-2 text-gray-700 dark:text-gray-300 cursor-pointer">
+            <label className="flex items-center gap-2 text-slate-700 dark:text-slate-300 cursor-pointer">
               <input
                 type="checkbox"
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
-                className="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 dark:focus:ring-blue-400"
+                className="rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500 dark:focus:ring-blue-400"
               />
               Remember me
             </label>
@@ -166,7 +169,7 @@ export default function LoginForm() {
           </div>
 
           {error && (
-            <div className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 p-2 rounded transition-colors duration-200">
+            <div className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 p-3 rounded-md transition-colors duration-200">
               {error}
               {showResend && (
                 <div className="mt-2">
@@ -184,7 +187,7 @@ export default function LoginForm() {
           )}
 
           {resendMessage && (
-            <div className="text-sm text-green-700 dark:text-green-300 bg-green-50 dark:bg-green-900/30 p-2 rounded transition-colors duration-200">
+            <div className="text-sm text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-900/30 p-3 rounded-md transition-colors duration-200">
               {resendMessage}
             </div>
           )}
@@ -192,20 +195,21 @@ export default function LoginForm() {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-[#0b3264] text-white py-2 px-4 rounded-md hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-[#0b3264] hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500 text-white font-medium py-2.5 px-4 rounded-md transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isLoading ? "Signing in..." : "Sign In"}
           </button>
         </form>
       </CardContent>
-      <CardFooter className="flex-col gap-2 bg-transparent">
+
+      <CardFooter className="flex justify-center border-t border-slate-200/50 dark:border-slate-700/50 pt-4">
         <div className="text-center text-sm">
-          <span className="text-gray-600 dark:text-gray-400">
+          <span className="text-slate-600 dark:text-slate-400">
             Don&apos;t have an account?{" "}
           </span>
           <a
             href="/register"
-            className="text-blue-600 dark:text-blue-400 hover:underline"
+            className="text-blue-600 dark:text-blue-400 hover:underline font-medium"
           >
             Register
           </a>

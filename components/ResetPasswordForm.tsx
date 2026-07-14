@@ -1,9 +1,15 @@
-// components/ResetPasswordForm.tsx
 "use client";
 
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { isValidPassword } from "@/lib/validation";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 export default function ResetPasswordForm() {
   const router = useRouter();
@@ -58,80 +64,105 @@ export default function ResetPasswordForm() {
     }
   };
 
+  // If token is missing, show an error state inside the same card
   if (!token) {
     return (
-      <div className="max-w-md mx-auto mt-10 bg-white dark:bg-slate-800 shadow-md transition-colors duration-200 bg-linear-to-br from-[#0b3264] to-slate-800 rounded-3xl p-12 text-white dark:from-[#0b3264] dark:to-slate-900">
-        <p className="text-sm text-red-600 dark:text-red-400">
-          Invalid or missing reset link.
-        </p>
-        <div className="mt-4 text-center text-sm">
+      <Card className="w-full max-w-md mx-auto mt-10 bg-white dark:bg-[#161b22] border border-slate-200 dark:border-slate-700/50 shadow-sm rounded-xl transition-colors duration-300">
+        <CardHeader>
+          <CardTitle>
+            <h1
+              style={{ fontFamily: "var(--font-fraunces)" }}
+              className="text-2xl font-bold text-slate-900 dark:text-white"
+            >
+              Reset Password
+            </h1>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 p-4 rounded-md">
+            Invalid or missing reset link.
+          </div>
+        </CardContent>
+        <CardFooter className="flex justify-center border-t border-slate-200/50 dark:border-slate-700/50 pt-4">
           <a
             href="/forgot-password"
-            className="text-blue-600 dark:text-blue-400 hover:underline"
+            className="text-blue-600 dark:text-blue-400 hover:underline font-medium text-sm"
           >
             Request a new link
           </a>
-        </div>
-      </div>
+        </CardFooter>
+      </Card>
     );
   }
 
   return (
-    <div className="max-w-md mx-auto mt-10 bg-white dark:bg-slate-800 shadow-md transition-colors duration-200 bg-linear-to-br from-[#0b3264] to-slate-800 rounded-3xl p-12 text-white dark:from-[#0b3264] dark:to-slate-900">
-      <h1
-        style={{ fontFamily: "var(--font-fraunces)" }}
-        className="text-2xl font-bold mb-6 text-gray-900 dark:text-white"
-      >
-        Reset Password
-      </h1>
-
-      {success ? (
-        <div className="text-sm text-green-700 dark:text-green-300 bg-green-50 dark:bg-green-900/30 p-3 rounded transition-colors duration-200">
-          Password updated. Redirecting to sign in...
-        </div>
-      ) : (
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
-              New Password
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full p-2 border border-gray-300 dark:border-neutral-600 rounded-md bg-white dark:bg-slate-900 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors duration-200"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
-              Confirm Password
-            </label>
-            <input
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full p-2 border border-gray-300 dark:border-neutral-600 rounded-md bg-white dark:bg-slate-900 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors duration-200"
-              required
-            />
-          </div>
-
-          {error && (
-            <div className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 p-2 rounded transition-colors duration-200">
-              {error}
-            </div>
-          )}
-
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full bg-[#0b3264] text-white py-2 px-4 rounded-md hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+    <Card className="w-full max-w-md mx-auto mt-10 bg-white dark:bg-[#161b22] border border-slate-200 dark:border-slate-700/50 shadow-sm rounded-xl transition-colors duration-300">
+      <CardHeader className="space-y-1">
+        <CardTitle>
+          <h1
+            style={{ fontFamily: "var(--font-fraunces)" }}
+            className="text-2xl font-bold text-slate-900 dark:text-white"
           >
-            {isLoading ? "Updating..." : "Update Password"}
-          </button>
-        </form>
-      )}
-    </div>
+            Reset Password
+          </h1>
+        </CardTitle>
+        <p className="text-sm text-slate-500 dark:text-slate-400">
+          Enter your new password below.
+        </p>
+      </CardHeader>
+
+      <CardContent>
+        {success ? (
+          <div className="text-sm text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-900/30 p-4 rounded-md transition-colors duration-200">
+            Password updated successfully! Redirecting to sign in...
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">
+                New Password
+              </label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full p-2.5 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors duration-200"
+                required
+              />
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                At least 8 characters, one uppercase letter, one number.
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">
+                Confirm Password
+              </label>
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="w-full p-2.5 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors duration-200"
+                required
+              />
+            </div>
+
+            {error && (
+              <div className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 p-3 rounded-md transition-colors duration-200">
+                {error}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full bg-[#0b3264] hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500 text-white font-medium py-2.5 px-4 rounded-md transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isLoading ? "Updating..." : "Update Password"}
+            </button>
+          </form>
+        )}
+      </CardContent>
+    </Card>
   );
 }

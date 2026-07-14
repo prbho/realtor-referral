@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { isValidEmail, isValidPassword, isValidNIN } from "@/lib/validation";
+import { useSession } from "next-auth/react";
+import { isValidEmail, isValidNIN } from "@/lib/validation";
 import {
-  LockKeyhole,
   Check,
   Loader2,
   Landmark,
@@ -19,6 +19,7 @@ import {
   IdCard,
   ChevronLeft,
   ChevronRight,
+  Camera,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,12 +32,14 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 type UserData = {
   id: string;
   name: string | null;
   email: string;
   role: string;
+  image: string | null;
   phone: string | null;
   streetAddress: string | null;
   apartment: string | null;
@@ -87,9 +90,18 @@ function renderErrorAlert(error: string) {
 
 export default function ProfileForm({ user }: { user: UserData }) {
   const router = useRouter();
+  const { update } = useSession();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [currentStep, setCurrentStep] = useState(0);
   const isLastStep = currentStep === STEPS.length - 1;
+
+  const [image, setImage] = useState(user.image);
+  const [photoStatus, setPhotoStatus] = useState<FormStatus>({
+    loading: false,
+    saved: false,
+    error: "",
+  });
 
   const [formData, setFormData] = useState({
     name: user.name || "",
@@ -107,30 +119,96 @@ export default function ProfileForm({ user }: { user: UserData }) {
     bankName: user.bankName || "",
   });
 
-  const [password, setPassword] = useState({
-    current: "",
-    new: "",
-    confirm: "",
-  });
-
   const [stepStatus, setStepStatus] = useState<FormStatus>({
     loading: false,
     saved: false,
     error: "",
   });
 
-  const [passwordStatus, setPasswordStatus] = useState<FormStatus>({
-    loading: false,
-    saved: false,
-    error: "",
-  });
+  const initials = user.name
+    ? user.name
+        .split(" ")
+        .map((p) => p[0])
+        .slice(0, 2)
+        .join("")
+        .toUpperCase()
+    : "?";
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setPassword({ ...password, [e.target.name]: e.target.value });
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setPhotoStatus({ loading: true, saved: false, error: "" });
+
+    try {
+      const uploadData = new FormData();
+      uploadData.append("file", file);
+
+      const res = await fetch("/api/settings/avatar", {
+        method: "POST",
+        body: uploadData,
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        setPhotoStatus({
+          loading: false,
+          saved: false,
+          error: data.error || "Failed to upload image",
+        });
+      } else {
+        setImage(data.image);
+        await update({ image: data.image });
+        setPhotoStatus({ loading: false, saved: true, error: "" });
+        setTimeout(
+          () => setPhotoStatus((prev) => ({ ...prev, saved: false })),
+          3000
+        );
+        router.refresh();
+      }
+    } catch {
+      setPhotoStatus({
+        loading: false,
+        saved: false,
+        error: "Something went wrong. Please try again.",
+      });
+    } finally {
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const handleRemovePhoto = async () => {
+    setPhotoStatus({ loading: true, saved: false, error: "" });
+    try {
+      const res = await fetch("/api/settings/avatar", { method: "DELETE" });
+      if (!res.ok) {
+        const data = await res.json();
+        setPhotoStatus({
+          loading: false,
+          saved: false,
+          error: data.error || "Failed to remove photo",
+        });
+      } else {
+        setImage(null);
+        await update({ image: null });
+        setPhotoStatus({ loading: false, saved: true, error: "" });
+        setTimeout(
+          () => setPhotoStatus((prev) => ({ ...prev, saved: false })),
+          3000
+        );
+        router.refresh();
+      }
+    } catch {
+      setPhotoStatus({
+        loading: false,
+        saved: false,
+        error: "Something went wrong. Please try again.",
+      });
+    }
   };
 
   const validateStep = (step: number): string | null => {
@@ -169,8 +247,6 @@ export default function ProfileForm({ user }: { user: UserData }) {
   };
 
   const goToStep = (index: number) => {
-    // Only allow jumping backward freely, or forward one step at a time
-    // through validation, so someone can't skip the required NIN step.
     if (index <= currentStep) {
       setStepStatus({ loading: false, saved: false, error: "" });
       setCurrentStep(index);
@@ -219,64 +295,6 @@ export default function ProfileForm({ user }: { user: UserData }) {
     }
   };
 
-  const handlePasswordSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setPasswordStatus({ ...passwordStatus, error: "", loading: true });
-
-    if (password.new !== password.confirm) {
-      setPasswordStatus({
-        loading: false,
-        saved: false,
-        error: "New passwords do not match",
-      });
-      return;
-    }
-
-    const passwordCheck = isValidPassword(password.new);
-    if (!passwordCheck.valid) {
-      setPasswordStatus({
-        loading: false,
-        saved: false,
-        error: passwordCheck.message || "Invalid password",
-      });
-      return;
-    }
-
-    try {
-      const res = await fetch("/api/profile", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          currentPassword: password.current,
-          newPassword: password.new,
-        }),
-      });
-      const data = await res.json();
-
-      if (!res.ok) {
-        setPasswordStatus({
-          loading: false,
-          saved: false,
-          error: data.error || "Something went wrong",
-        });
-      } else {
-        setPasswordStatus({ loading: false, saved: true, error: "" });
-        setTimeout(
-          () => setPasswordStatus((prev) => ({ ...prev, saved: false })),
-          3000
-        );
-        setPassword({ current: "", new: "", confirm: "" });
-        router.refresh();
-      }
-    } catch {
-      setPasswordStatus({
-        loading: false,
-        saved: false,
-        error: "Something went wrong. Please try again.",
-      });
-    }
-  };
-
   return (
     <div className="flex min-h-screen">
       <div className="flex-1 overflow-auto">
@@ -284,6 +302,79 @@ export default function ProfileForm({ user }: { user: UserData }) {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
             Profile Settings
           </h1>
+
+          {/* Profile photo */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Camera className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                Profile Photo
+              </CardTitle>
+              <CardDescription>
+                Upload a photo to personalize your account.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center gap-6">
+                <Avatar className="h-20 w-20">
+                  <AvatarImage
+                    src={image || undefined}
+                    alt={user.name || "User"}
+                  />
+                  <AvatarFallback className="text-lg bg-[#0b3264] text-white">
+                    {initials}
+                  </AvatarFallback>
+                </Avatar>
+
+                <div className="flex flex-col gap-2">
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={photoStatus.loading}
+                    >
+                      {photoStatus.loading ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : photoStatus.saved ? (
+                        <Check className="mr-2 h-4 w-4 text-emerald-600" />
+                      ) : (
+                        <Camera className="mr-2 h-4 w-4" />
+                      )}
+                      {photoStatus.loading
+                        ? "Uploading..."
+                        : photoStatus.saved
+                        ? "Saved!"
+                        : "Change Photo"}
+                    </Button>
+                    {image && (
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        onClick={handleRemovePhoto}
+                        disabled={photoStatus.loading}
+                      >
+                        Remove
+                      </Button>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    JPEG, PNG, or WebP. Max 5MB.
+                  </p>
+                </div>
+
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
+              </div>
+
+              {renderErrorAlert(photoStatus.error)}
+            </CardContent>
+          </Card>
 
           {/* Step indicator */}
           <div className="flex items-center">
@@ -417,7 +508,7 @@ export default function ProfileForm({ user }: { user: UserData }) {
                       <MapPin className="h-5 w-5 text-violet-600 dark:text-violet-400" />
                       Address
                     </CardTitle>
-                    <CardDescription>Where you're based.</CardDescription>
+                    <CardDescription>Where you&apos;re based.</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
@@ -653,87 +744,6 @@ export default function ProfileForm({ user }: { user: UserData }) {
               </CardContent>
             </Card>
           </form>
-
-          {/* Password change */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <LockKeyhole className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-                Change Password
-              </CardTitle>
-              <CardDescription>
-                Update your password to keep your account secure.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handlePasswordSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="current">Current Password</Label>
-                  <Input
-                    id="current"
-                    name="current"
-                    type="password"
-                    value={password.current}
-                    onChange={handlePasswordChange}
-                    placeholder="Enter current password"
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="new">New Password</Label>
-                  <Input
-                    id="new"
-                    name="new"
-                    type="password"
-                    value={password.new}
-                    onChange={handlePasswordChange}
-                    placeholder="Enter new password"
-                    required
-                  />
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    At least 8 characters, one uppercase letter, one number.
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="confirm">Confirm New Password</Label>
-                  <Input
-                    id="confirm"
-                    name="confirm"
-                    type="password"
-                    value={password.confirm}
-                    onChange={handlePasswordChange}
-                    placeholder="Confirm new password"
-                    required
-                  />
-                </div>
-
-                {renderErrorAlert(passwordStatus.error)}
-                {renderSuccessAlert(passwordStatus.saved)}
-
-                <Button
-                  type="submit"
-                  className="w-full sm:w-auto"
-                  disabled={passwordStatus.loading}
-                >
-                  {passwordStatus.loading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Updating...
-                    </>
-                  ) : passwordStatus.saved ? (
-                    <>
-                      <Check className="mr-2 h-4 w-4" />
-                      Updated!
-                    </>
-                  ) : (
-                    "Update Password"
-                  )}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
         </div>
       </div>
     </div>

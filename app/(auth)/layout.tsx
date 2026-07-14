@@ -13,7 +13,7 @@ export default function Layout({
   children: React.ReactNode;
 }>) {
   return (
-    <div className="min-h-screen bg-slate-50py-20 bg-linear-to-b from-slate-50 to-white dark:from-slate-950 dark:to-slate-900">
+    <div className="bg-white dark:bg-[#0d1117] transition-colors duration-300">
       <main className="min-h-full flex flex-col justify-center items-center h-screen">
         <div className="mb-6">
           <Link href="/" className="transition-colors duration-200">

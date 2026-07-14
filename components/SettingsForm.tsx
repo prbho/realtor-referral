@@ -1,9 +1,7 @@
 "use client";
 
-import { useState, useRef } from "react";
-import { useRouter } from "next/navigation";
-import { useSession, signOut } from "next-auth/react";
-import { useTheme } from "@/components/ThemeProvider";
+import { useState } from "react";
+import { isValidPassword } from "@/lib/validation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,30 +14,29 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { signOut } from "next-auth/react";
 import {
   AlertTriangle,
   BellDot,
-  Camera,
   MonitorCog,
   Check,
   Loader2,
   Sun,
   Moon,
   Monitor,
-  User,
   Trash2,
   BellRing,
   BellOff,
   LucideIcon,
+  LockKeyhole,
 } from "lucide-react";
+import { useTheme } from "@/components/ThemeProvider";
 
 type User = {
   id: string;
   name: string | null;
   email: string;
-  image: string | null;
   emailNotifications: boolean;
   marketingEmails: boolean;
 };
@@ -51,13 +48,14 @@ type FormStatus = {
 };
 
 export default function SettingsForm({ user }: { user: User }) {
-  const router = useRouter();
-  const { update } = useSession();
   const { theme, setTheme } = useTheme();
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [image, setImage] = useState(user.image);
-  const [photoStatus, setPhotoStatus] = useState<FormStatus>({
+  const [password, setPassword] = useState({
+    current: "",
+    new: "",
+    confirm: "",
+  });
+  const [passwordStatus, setPasswordStatus] = useState<FormStatus>({
     loading: false,
     saved: false,
     error: "",
@@ -86,14 +84,66 @@ export default function SettingsForm({ user }: { user: User }) {
     error: "",
   });
 
-  const initials = user.name
-    ? user.name
-        .split(" ")
-        .map((p) => p[0])
-        .slice(0, 2)
-        .join("")
-        .toUpperCase()
-    : "?";
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPassword({ ...password, [e.target.name]: e.target.value });
+  };
+
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordStatus({ loading: true, saved: false, error: "" });
+
+    if (password.new !== password.confirm) {
+      setPasswordStatus({
+        loading: false,
+        saved: false,
+        error: "New passwords do not match",
+      });
+      return;
+    }
+
+    const passwordCheck = isValidPassword(password.new);
+    if (!passwordCheck.valid) {
+      setPasswordStatus({
+        loading: false,
+        saved: false,
+        error: passwordCheck.message || "Invalid password",
+      });
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          currentPassword: password.current,
+          newPassword: password.new,
+        }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        setPasswordStatus({
+          loading: false,
+          saved: false,
+          error: data.error || "Something went wrong",
+        });
+      } else {
+        setPasswordStatus({ loading: false, saved: true, error: "" });
+        setTimeout(
+          () => setPasswordStatus((prev) => ({ ...prev, saved: false })),
+          3000
+        );
+        setPassword({ current: "", new: "", confirm: "" });
+      }
+    } catch {
+      setPasswordStatus({
+        loading: false,
+        saved: false,
+        error: "Something went wrong. Please try again.",
+      });
+    }
+  };
 
   const handleThemeChange = async (newTheme: "light" | "dark" | "system") => {
     setThemeStatus({ loading: true, saved: false, error: "" });
@@ -123,79 +173,6 @@ export default function SettingsForm({ user }: { user: User }) {
       }
     } catch {
       setThemeStatus({
-        loading: false,
-        saved: false,
-        error: "Something went wrong. Please try again.",
-      });
-    }
-  };
-
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setPhotoStatus({ loading: true, saved: false, error: "" });
-
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-
-      const res = await fetch("/api/settings/avatar", {
-        method: "POST",
-        body: formData,
-      });
-      const data = await res.json();
-
-      if (!res.ok) {
-        setPhotoStatus({
-          loading: false,
-          saved: false,
-          error: data.error || "Failed to upload image",
-        });
-      } else {
-        setImage(data.image);
-        await update({ image: data.image });
-        setPhotoStatus({ loading: false, saved: true, error: "" });
-        setTimeout(
-          () => setPhotoStatus((prev) => ({ ...prev, saved: false })),
-          3000
-        );
-        router.refresh();
-      }
-    } catch {
-      setPhotoStatus({
-        loading: false,
-        saved: false,
-        error: "Something went wrong. Please try again.",
-      });
-    } finally {
-      if (fileInputRef.current) fileInputRef.current.value = "";
-    }
-  };
-
-  const handleRemovePhoto = async () => {
-    setPhotoStatus({ loading: true, saved: false, error: "" });
-    try {
-      const res = await fetch("/api/settings/avatar", { method: "DELETE" });
-      if (!res.ok) {
-        const data = await res.json();
-        setPhotoStatus({
-          loading: false,
-          saved: false,
-          error: data.error || "Failed to remove photo",
-        });
-      } else {
-        setImage(null);
-        await update({ image: null });
-        setPhotoStatus({ loading: false, saved: true, error: "" });
-        setTimeout(
-          () => setPhotoStatus((prev) => ({ ...prev, saved: false })),
-          3000
-        );
-        router.refresh();
-      }
-    } catch {
-      setPhotoStatus({
         loading: false,
         saved: false,
         error: "Something went wrong. Please try again.",
@@ -310,7 +287,6 @@ export default function SettingsForm({ user }: { user: User }) {
 
   return (
     <div className="flex min-h-screen">
-      {/* Main Content */}
       <div className="flex-1 overflow-auto">
         <div className="max-w-3xl mx-auto p-6 space-y-6">
           <div className="flex items-center justify-between">
@@ -319,14 +295,11 @@ export default function SettingsForm({ user }: { user: User }) {
             </h1>
           </div>
 
-          <Tabs defaultValue="profile-photo" className="space-y-4">
+          <Tabs defaultValue="account" className="space-y-4">
             <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger
-                value="profile-photo"
-                className="flex items-center gap-2"
-              >
-                <Camera className="h-4 w-4" />
-                <span className="hidden sm:inline">Photo</span>
+              <TabsTrigger value="account" className="flex items-center gap-2">
+                <LockKeyhole className="h-4 w-4" />
+                <span className="hidden sm:inline">Account</span>
               </TabsTrigger>
               <TabsTrigger
                 value="notifications"
@@ -348,78 +321,85 @@ export default function SettingsForm({ user }: { user: User }) {
               </TabsTrigger>
             </TabsList>
 
-            {/* Profile Photo Tab */}
-            <TabsContent value="profile-photo" id="profile-photo">
+            {/* Account Tab — password change */}
+            <TabsContent value="account" id="account">
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Camera className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                    Profile Photo
+                    <LockKeyhole className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                    Change Password
                   </CardTitle>
                   <CardDescription>
-                    Upload a profile photo to personalize your account
+                    Update your password to keep your account secure.
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center gap-6">
-                    <Avatar className="h-20 w-20">
-                      <AvatarImage
-                        src={image || undefined}
-                        alt={user.name || "User"}
+                <CardContent>
+                  <form onSubmit={handlePasswordSubmit} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="current">Current Password</Label>
+                      <Input
+                        id="current"
+                        name="current"
+                        type="password"
+                        value={password.current}
+                        onChange={handlePasswordChange}
+                        placeholder="Enter current password"
+                        required
                       />
-                      <AvatarFallback className="text-lg bg-[#0b3264] text-white">
-                        {initials}
-                      </AvatarFallback>
-                    </Avatar>
+                    </div>
 
-                    <div className="flex flex-col gap-2">
-                      <div className="flex flex-wrap gap-2">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => fileInputRef.current?.click()}
-                          disabled={photoStatus.loading}
-                          className="relative"
-                        >
-                          {photoStatus.loading ? (
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          ) : photoStatus.saved ? (
-                            <Check className="mr-2 h-4 w-4 text-emerald-600" />
-                          ) : (
-                            <Camera className="mr-2 h-4 w-4" />
-                          )}
-                          {photoStatus.loading
-                            ? "Uploading..."
-                            : photoStatus.saved
-                            ? "Saved!"
-                            : "Change Photo"}
-                        </Button>
-                        {image && (
-                          <Button
-                            type="button"
-                            variant="destructive"
-                            onClick={handleRemovePhoto}
-                            disabled={photoStatus.loading}
-                          >
-                            Remove
-                          </Button>
-                        )}
-                      </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="new">New Password</Label>
+                      <Input
+                        id="new"
+                        name="new"
+                        type="password"
+                        value={password.new}
+                        onChange={handlePasswordChange}
+                        placeholder="Enter new password"
+                        required
+                      />
                       <p className="text-xs text-gray-500 dark:text-gray-400">
-                        JPEG, PNG, or WebP. Max 5MB.
+                        At least 8 characters, one uppercase letter, one number.
                       </p>
                     </div>
 
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp"
-                      onChange={handleFileSelect}
-                      className="hidden"
-                    />
-                  </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="confirm">Confirm New Password</Label>
+                      <Input
+                        id="confirm"
+                        name="confirm"
+                        type="password"
+                        value={password.confirm}
+                        onChange={handlePasswordChange}
+                        placeholder="Confirm new password"
+                        required
+                      />
+                    </div>
 
-                  {renderErrorAlert(photoStatus.error)}
+                    {renderErrorAlert(passwordStatus.error)}
+                    {renderSuccessAlert(passwordStatus.saved)}
+
+                    <Button
+                      type="submit"
+                      className="w-full sm:w-auto"
+                      disabled={passwordStatus.loading}
+                    >
+                      {passwordStatus.loading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Updating...
+                        </>
+                      ) : passwordStatus.saved ? (
+                        <>
+                          <Check className="mr-2 h-4 w-4" />
+                          Updated!
+                        </>
+                      ) : (
+                        "Update Password"
+                      )}
+                    </Button>
+                  </form>
                 </CardContent>
               </Card>
             </TabsContent>
@@ -439,7 +419,7 @@ export default function SettingsForm({ user }: { user: User }) {
                 <CardContent>
                   <form onSubmit={handlePrefsSubmit} className="space-y-6">
                     <div className="space-y-4">
-                      <div className="flex items-center justify-between p-4 rounded-lg border border-gray-200 dark:border-neutral-700 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                      <div className="flex items-center justify-between p-4 rounded-lg border border-gray-200 dark:border-neutral-700 hover:bg-gray-50 dark:hover:bg-neutral-800/50 transition-colors">
                         <div className="space-y-0.5">
                           <Label
                             htmlFor="email-notifications"
@@ -461,7 +441,7 @@ export default function SettingsForm({ user }: { user: User }) {
                         />
                       </div>
 
-                      <div className="flex items-center justify-between p-4 rounded-lg border border-gray-200 dark:border-neutral-700 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                      <div className="flex items-center justify-between p-4 rounded-lg border border-gray-200 dark:border-neutral-700 hover:bg-gray-50 dark:hover:bg-neutral-800/50 transition-colors">
                         <div className="space-y-0.5">
                           <Label
                             htmlFor="marketing-emails"

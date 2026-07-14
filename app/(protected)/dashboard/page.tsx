@@ -8,23 +8,22 @@ import CopyButton from "@/components/CopyButton";
 import Greeting from "@/components/Greeting";
 import Link from "next/link";
 import {
-  ChartNetwork,
   Link2Icon,
   UserRoundArrowLeft,
   Users,
-  Building2,
-  TrendingUp,
-  UserPlus,
   Wallet,
   AlertCircle,
-  Mail,
+  Zap,
 } from "lucide-react";
 import Image from "next/image";
+import StatCard from "@/components/StatCard";
+import AdminOverview from "@/components/AdminOverview";
 
 export const metadata = {
   title: "Dashboard | Regal PDC Realtor",
 };
 
+// ─── UserAvatar (Server Component) ──────────────────────────
 function UserAvatar({
   src,
   name,
@@ -66,6 +65,7 @@ function UserAvatar({
   );
 }
 
+// ─── Required fields ──────────────────────────────────────────
 const REQUIRED_PROFILE_FIELDS = [
   { key: "phone", label: "Phone Number" },
   { key: "streetAddress", label: "Street Address" },
@@ -78,6 +78,7 @@ const REQUIRED_PROFILE_FIELDS = [
   { key: "bankName", label: "Bank Name" },
 ] as const;
 
+// ─── Main Component ──────────────────────────────────────────
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
 
@@ -106,7 +107,6 @@ export default async function DashboardPage() {
   );
   const isProfileIncomplete = missingFields.length > 0;
 
-  // Calculate date outside of the database query
   const sevenDaysAgo = new Date();
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
@@ -128,7 +128,7 @@ export default async function DashboardPage() {
           prisma.user.count({
             where: {
               createdAt: {
-                gte: sevenDaysAgo, // Use the pre-calculated date
+                gte: sevenDaysAgo,
               },
             },
           }),
@@ -159,21 +159,38 @@ export default async function DashboardPage() {
   });
 
   return (
-    <div className="p-6 space-y-8 relative">
-      {/* Header */}
-      <div>
-        <div className="flex items-center justify-between">
+    <div className="p-6 md:p-8 space-y-8 relative">
+      {/* Subtle background */}
+      <div className="absolute inset-0 -z-10 bg-linear-to-b from-blue-50/30 to-white dark:from-slate-900/50 dark:to-slate-900" />
+
+      {/* ─── Header ─────────────────────────────────────────────── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
           <Greeting name={user.name} />
-          <span className="text-xs font-medium px-3 py-1 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-neutral-700 text-neutral-600 dark:text-gray-300">
-            {user.role}
-          </span>
+          <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">
+            Welcome back. Here&apos;s what&apos;s happening with your account
+            today.
+          </p>
+          <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
+            {today}
+          </p>
         </div>
-        <p className="text-sm text-neutral-500 dark:text-gray-400 mt-1">
-          {today}
-        </p>
+        <div className="flex items-center gap-3">
+          <span className="text-xs font-medium px-3 py-1.5 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-neutral-700 text-neutral-600 dark:text-gray-300">
+            {user.isSuperAdmin ? (
+              <span className="flex items-center gap-1">
+                <Zap className="h-3.5 w-3.5" />
+                SuperAdmin
+              </span>
+            ) : (
+              user.role
+            )}
+          </span>
+          <UserAvatar src={user.image} name={user.name} size={40} />
+        </div>
       </div>
 
-      {/* Incomplete profile alert */}
+      {/* ─── Incomplete profile alert ──────────────────────────── */}
       {isProfileIncomplete && (
         <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 rounded-xl p-4 flex items-start gap-3 transition-colors duration-200">
           <div className="h-8 w-8 shrink-0 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center">
@@ -198,202 +215,81 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      {/* Admin platform overview */}
-      {isAdmin && platformStats && (
-        <div className="bg-slate-900 dark:bg-slate-950 text-white p-6 rounded-xl shadow-md transition-colors duration-200">
-          <div className="flex items-center justify-between mb-5">
-            <h2 className="text-lg font-semibold">Platform Overview</h2>
-            <Link
-              href="/admin"
-              className="text-sm text-slate-300 hover:text-white underline"
-            >
-              View all users →
-            </Link>
-          </div>
+      {/* ─── Platform Overview ────────────────────────────────────── */}
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-5">
-            <div className="flex items-center gap-3">
-              <div className="h-9 w-9 shrink-0 rounded-full bg-white/10 flex items-center justify-center">
-                <Users className="h-4 w-4 text-slate-300" />
-              </div>
-              <div>
-                <p className="text-xs text-slate-400 uppercase tracking-wide">
-                  Total Users
-                </p>
-                <p className="text-xl font-bold">{platformStats.totalUsers}</p>
-              </div>
-            </div>
+      {isAdmin && platformStats && <AdminOverview stats={platformStats} />}
 
-            <div className="flex items-center gap-3">
-              <div className="h-9 w-9 shrink-0 rounded-full bg-white/10 flex items-center justify-center">
-                <Building2 className="h-4 w-4 text-slate-300" />
-              </div>
-              <div>
-                <p className="text-xs text-slate-400 uppercase tracking-wide">
-                  Realtors
-                </p>
-                <p className="text-xl font-bold">
-                  {platformStats.totalRealtors}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <div className="h-9 w-9 shrink-0 rounded-full bg-white/10 flex items-center justify-center">
-                <TrendingUp className="h-4 w-4 text-slate-300" />
-              </div>
-              <div>
-                <p className="text-xs text-slate-400 uppercase tracking-wide">
-                  Total Referrals
-                </p>
-                <p className="text-xl font-bold">
-                  {platformStats.totalReferrals}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <div className="h-9 w-9 shrink-0 rounded-full bg-white/10 flex items-center justify-center">
-                <UserPlus className="h-4 w-4 text-slate-300" />
-              </div>
-              <div>
-                <p className="text-xs text-slate-400 uppercase tracking-wide">
-                  New This Week
-                </p>
-                <p className="text-xl font-bold">{platformStats.newThisWeek}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-5 pt-5 border-t border-slate-700 dark:border-slate-600 flex items-center gap-3">
-            <div className="h-9 w-9 shrink-0 rounded-full bg-emerald-500/20 flex items-center justify-center">
-              <Wallet className="h-4 w-4 text-emerald-400" />
-            </div>
-            <div>
-              <p className="text-xs text-slate-400 uppercase tracking-wide">
-                Total Commission Paid Out
-              </p>
-              <p className="text-xl font-bold">
-                ₦{platformStats.totalCommission.toFixed(2)}
-              </p>
-            </div>
-          </div>
-
-          {/* Email send limit status */}
-          <Link
-            href="/admin/settings"
-            className="mt-4 flex items-center gap-3 hover:opacity-90 transition-opacity duration-200"
-          >
-            <div className="h-9 w-9 shrink-0 rounded-full bg-white/10 flex items-center justify-center">
-              <Mail className="h-4 w-4 text-slate-300" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <p className="text-xs text-slate-400 uppercase tracking-wide">
-                  Email Send Limit
-                </p>
-                <span
-                  className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${
-                    platformStats.emailLimitEnabled
-                      ? "bg-emerald-500/20 text-emerald-400"
-                      : "bg-slate-500/20 text-gray-400"
-                  }`}
-                >
-                  {platformStats.emailLimitEnabled ? "ON" : "OFF"}
-                </span>
-              </div>
-              <p className="text-sm font-medium">
-                {platformStats.emailsSentToday} /{" "}
-                {platformStats.emailDailyLimit} sent today
-              </p>
-            </div>
-          </Link>
-        </div>
-      )}
-
-      {/* Referral link + stats */}
-      <div className="grid md:grid-cols-2 gap-6">
-        <div className="bg-white border border-slate-200 dark:border-slate-800 dark:bg-slate-800 p-6 rounded-xl shadow-sm transition-colors duration-200">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="h-8 w-8 shrink-0 rounded-full bg-blue-50 dark:bg-blue-950/40 flex items-center justify-center">
-              <Link2Icon className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-            </div>
-            <h2
-              style={{ fontFamily: "var(--font-fraunces)" }}
-              className="font-semibold text-neutral-800 dark:text-white"
-            >
-              Your Referral Link
-            </h2>
-          </div>
-          <div className="flex items-center gap-2">
-            <input
-              type="text"
-              value={referralLink}
-              readOnly
-              className="flex-1 p-2 border rounded-md text-sm bg-slate-50 dark:bg-neutral-700 dark:border-neutral-600 dark:text-white transition-colors duration-200"
-            />
-            <CopyButton text={referralLink} />
-          </div>
-        </div>
-
-        <div className="bg-white border border-slate-200 dark:border-slate-800 dark:bg-slate-800 p-6 rounded-xl shadow-sm transition-colors duration-200">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="h-8 w-8 shrink-0 rounded-full bg-emerald-50 dark:bg-emerald-950/40 flex items-center justify-center">
-              <ChartNetwork className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-            </div>
-            <h2
-              style={{ fontFamily: "var(--font-fraunces)" }}
-              className="font-semibold text-neutral-800 dark:text-white"
-            >
-              Your Stats
-            </h2>
-          </div>
-          <div className="space-y-2">
-            <div className="flex items-baseline justify-between">
-              <span className="text-sm text-neutral-500 dark:text-gray-400">
-                Total Referrals
-              </span>
-              <span className="text-xl font-bold text-neutral-800 dark:text-white">
-                {user.referralCount}
-              </span>
-            </div>
-            <div className="flex items-baseline justify-between">
-              <span className="text-sm text-neutral-500 dark:text-gray-400">
-                Commission Earned
-              </span>
-              <span className="text-xl font-bold text-neutral-800 dark:text-white">
-                ₦{user.commission.toFixed(2)}
-              </span>
-            </div>
-          </div>
-        </div>
+      {/* ─── Stats Grid ────────────────────────────────────────── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <StatCard
+          icon={<Users className="h-5 w-5 text-blue-600 dark:text-blue-400" />}
+          label="Total Referrals"
+          value={user.referralCount}
+          change="+0 this week"
+          bg="bg-blue-50 dark:bg-blue-950/20"
+        />
+        <StatCard
+          icon={
+            <Wallet className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+          }
+          label="Commission Earned"
+          value={`₦${user.commission.toFixed(2)}`}
+          bg="bg-emerald-50 dark:bg-emerald-950/20"
+        />
+        <StatCard
+          icon={
+            <Link2Icon className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+          }
+          label="Referral Code"
+          value={user.referralCode ?? ""}
+          copyable
+          copyValue={user.referralCode ?? ""}
+          bg="bg-purple-50 dark:bg-purple-950/20"
+        />
       </div>
 
-      {/* Referrals list */}
-      <div className="bg-white border border-slate-200 dark:border-slate-800 dark:bg-slate-800 p-6 rounded-xl shadow-sm transition-colors duration-200">
+      {/* ─── Referral Link Card ────────────────────────────────── */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-6 transition-colors duration-200">
         <div className="flex items-center gap-2 mb-4">
-          <div className="h-8 w-8 shrink-0 rounded-full bg-violet-50 dark:bg-violet-950/40 flex items-center justify-center">
-            <UserRoundArrowLeft className="h-4 w-4 text-violet-600 dark:text-violet-400" />
-          </div>
-          <h2
-            style={{ fontFamily: "var(--font-fraunces)" }}
-            className="font-semibold text-neutral-800 dark:text-white"
-          >
+          <Link2Icon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+          <h2 className="font-semibold text-lg text-slate-900 dark:text-white">
+            Your Referral Link
+          </h2>
+        </div>
+        <div className="flex items-center gap-2 flex-col sm:flex-row">
+          <input
+            type="text"
+            value={referralLink}
+            readOnly
+            className="flex-1 w-full p-2.5 border rounded-md text-sm bg-gray-50 dark:bg-neutral-700 dark:border-neutral-600 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors duration-200"
+          />
+          <CopyButton text={referralLink} />
+        </div>
+        <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
+          Share this link with friends and earn commissions on their referrals.
+        </p>
+      </div>
+
+      {/* ─── Referrals List ────────────────────────────────────── */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-6 transition-colors duration-200">
+        <div className="flex items-center gap-2 mb-4">
+          <UserRoundArrowLeft className="h-5 w-5 text-violet-600 dark:text-violet-400" />
+          <h2 className="font-semibold text-lg text-slate-900 dark:text-white">
             Your Referrals
           </h2>
         </div>
 
         {user.referrals.length === 0 ? (
           <div className="text-center py-8">
-            <p className="text-gray-500 dark:text-gray-400 text-sm">
+            <p className="text-slate-500 dark:text-slate-400 text-sm">
               You haven&apos;t referred anyone yet.
             </p>
-            <p className="text-gray-400 dark:text-gray-500 text-xs mt-1">
+            <p className="text-slate-400 dark:text-slate-500 text-xs mt-1">
               Share your referral link above to get started.
             </p>
           </div>
         ) : (
-          <ul className="divide-y divide-gray-200 dark:divide-neutral-700">
+          <ul className="divide-y divide-slate-200 dark:divide-neutral-700">
             {user.referrals.map(
               (ref: {
                 id: string;
@@ -402,18 +298,16 @@ export default async function DashboardPage() {
                 createdAt: Date;
               }) => (
                 <li key={ref.id} className="py-3 flex items-center gap-3">
-                  <div className="h-9 w-9 shrink-0 rounded-full bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 flex items-center justify-center text-xs font-semibold">
-                    <UserAvatar src={user.image} name={user.name} />
-                  </div>
+                  <UserAvatar src={user.image} name={ref.name} size={36} />
                   <div className="min-w-0 flex-1">
-                    <p className="font-medium text-neutral-800 dark:text-white truncate">
-                      {ref.name}
+                    <p className="font-medium text-slate-900 dark:text-white truncate">
+                      {ref.name || "Unnamed"}
                     </p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                    <p className="text-sm text-slate-500 dark:text-slate-400 truncate">
                       {ref.email}
                     </p>
                   </div>
-                  <p className="text-xs text-gray-400 dark:text-gray-500 shrink-0">
+                  <p className="text-xs text-slate-400 dark:text-slate-500 shrink-0">
                     {new Date(ref.createdAt).toLocaleDateString()}
                   </p>
                 </li>

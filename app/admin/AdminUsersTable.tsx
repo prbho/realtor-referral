@@ -1,4 +1,3 @@
-// app/admin/AdminUsersTable.tsx
 "use client";
 
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
@@ -18,6 +17,9 @@ import {
   LucideIcon,
   CheckCircle2,
   XCircle,
+  Trash,
+  Download,
+  UserPlus,
 } from "lucide-react";
 import {
   Select,
@@ -29,6 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Table,
   TableBody,
@@ -52,6 +55,7 @@ type Referral = {
 };
 
 type UserRow = {
+  isSuperAdmin: boolean;
   image: string | null;
   id: string;
   name: string | null;
@@ -73,6 +77,7 @@ type UserRow = {
   bankName: string | null;
   referrals: Referral[];
   nin: string | null;
+  referredBy: { name: string; id: string } | null;
 };
 
 const ROLE_OPTIONS: Role[] = ["USER", "REALTOR", "ADMIN"];
@@ -86,6 +91,16 @@ const roleBadgeColor = (role: string) =>
     ? "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"
     : "bg-gray-100 dark:bg-neutral-700 text-neutral-600 dark:text-gray-300";
 
+// ─── Helper: short date (M/D/YY) ──────────────────────────────
+function formatShortDate(date: string | Date): string {
+  const d = typeof date === "string" ? new Date(date) : date;
+  return `${d.getMonth() + 1}/${d.getDate()}/${d
+    .getFullYear()
+    .toString()
+    .slice(2)}`;
+}
+
+// ─── Summary Card ──────────────────────────────────────────────
 function SummaryCard({
   icon: Icon,
   color,
@@ -256,6 +271,13 @@ function PaginationControls({
   );
 }
 
+// Helper to build role select class
+const getRoleSelectClass = (role: string) => {
+  const baseClass = "text-xs font-medium rounded-full px-3 py-1 border-0";
+  const colorClass = roleBadgeColor(role);
+  return `${baseClass} ${colorClass}`;
+};
+
 export default function AdminUsersTable({
   users,
   currentUserId,
@@ -264,6 +286,8 @@ export default function AdminUsersTable({
   currentUserId: string;
 }) {
   const [showNIN, setShowNIN] = useState(false);
+  const isViewerSuperAdmin =
+    users.find((u) => u.id === currentUserId)?.isSuperAdmin ?? false;
 
   const [usersState, setUsersState] = useState<UserRow[]>(users);
   const [search, setSearch] = useState("");
@@ -274,8 +298,9 @@ export default function AdminUsersTable({
   const [showAccountNumber, setShowAccountNumber] = useState(false);
   const [savingRoleFor, setSavingRoleFor] = useState<string | null>(null);
   const [roleError, setRoleError] = useState<{
-    userId: string;
+    title: string;
     message: string;
+    userId?: string;
   } | null>(null);
   const [pendingRoleChange, setPendingRoleChange] = useState<{
     user: UserRow;
@@ -289,6 +314,15 @@ export default function AdminUsersTable({
   const [currentPage, setCurrentPage] = useState(1);
   const [mobileVisibleCount, setMobileVisibleCount] =
     useState(DEFAULT_PAGE_SIZE);
+  const [pendingDeleteUser, setPendingDeleteUser] = useState<UserRow | null>(
+    null
+  );
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkAction, setBulkAction] = useState<"delete" | "export" | null>(
+    null
+  );
+  const [isBulkConfirmOpen, setIsBulkConfirmOpen] = useState(false);
+
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
   const showToast = (
@@ -351,7 +385,7 @@ export default function AdminUsersTable({
       if (!res.ok) {
         setUsersState(previous);
         setRoleError({
-          userId: user.id,
+          title: "Role Update Failed",
           message: data.error || "Failed to update role",
         });
         showToast(data.error || "Failed to update role", "error");
@@ -364,13 +398,151 @@ export default function AdminUsersTable({
     } catch {
       setUsersState(previous);
       const message = "Something went wrong. Please try again.";
-      setRoleError({ userId: user.id, message });
+      setRoleError({
+        title: "Error",
+        message,
+      });
       showToast(message, "error");
     } finally {
       setSavingRoleFor(null);
     }
   };
 
+  // ── Selection helpers ──────────────────────────────────────────
+  const toggleSelection = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleAllOnPage = () => {
+    const pageIds = paginatedUsers.map((u) => u.id);
+    const allSelected = pageIds.every((id) => selectedIds.has(id));
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (allSelected) {
+        pageIds.forEach((id) => next.delete(id));
+      } else {
+        pageIds.forEach((id) => next.add(id));
+      }
+      return next;
+    });
+  };
+
+  // ── Bulk Delete ────────────────────────────────────────────────
+  const handleBulkDelete = () => {
+    if (selectedIds.size === 0) return;
+    setBulkAction("delete");
+    setIsBulkConfirmOpen(true);
+  };
+
+  const confirmBulkDelete = async () => {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return;
+    setIsBulkConfirmOpen(false);
+
+    try {
+      const res = await fetch("/api/admin/users/bulk-delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userIds: ids }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Bulk delete failed");
+
+      setUsersState((prev) => prev.filter((u) => !ids.includes(u.id)));
+      setSelectedIds(new Set());
+      showToast(`Deleted ${ids.length} user(s)`, "success");
+    } catch (err: unknown) {
+      showToast(
+        err instanceof Error ? err.message : "Bulk delete failed",
+        "error"
+      );
+    }
+  };
+
+  // ── Bulk Export CSV ────────────────────────────────────────────
+  const handleBulkExport = () => {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return;
+    const selectedUsers = usersState.filter((u) => ids.includes(u.id));
+    const headers = [
+      "Name",
+      "Email",
+      "Role",
+      "Referrals",
+      "Commission",
+      "Joined",
+      "Phone",
+      "City",
+      "State",
+      "Country",
+      "NIN",
+      "Account Name",
+      "Bank Name",
+      "Account Number",
+    ];
+    const rows = selectedUsers.map((u) => [
+      u.name || "",
+      u.email,
+      u.role,
+      u.referralCount,
+      u.commission.toFixed(2),
+      formatShortDate(u.createdAt),
+      u.phone || "",
+      u.city || "",
+      u.state || "",
+      u.country || "",
+      u.nin || "",
+      u.accountName || "",
+      u.bankName || "",
+      u.accountNumber || "",
+    ]);
+    const csv = [headers.join(","), ...rows.map((row) => row.join(","))].join(
+      "\n"
+    );
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `users-export-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast(`Exported ${ids.length} user(s)`, "success");
+  };
+
+  // ── Individual delete ──────────────────────────────────────────
+  const requestDeleteUser = (user: UserRow) => {
+    setPendingDeleteUser(user);
+  };
+
+  const confirmDeleteUser = async () => {
+    if (!pendingDeleteUser) return;
+    const user = pendingDeleteUser;
+    setPendingDeleteUser(null);
+
+    try {
+      const res = await fetch(`/api/admin/users/${user.id}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Delete failed");
+      setUsersState((prev) => prev.filter((u) => u.id !== user.id));
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(user.id);
+        return next;
+      });
+      showToast("User deleted successfully", "success");
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : "Delete failed", "error");
+    }
+  };
+
+  // ── Filtering & Pagination ─────────────────────────────────────
   const filteredUsers = useMemo(() => {
     const q = search.trim().toLowerCase();
     return usersState.filter((u) => {
@@ -384,10 +556,7 @@ export default function AdminUsersTable({
     });
   }, [usersState, search, roleFilter]);
 
-  // Reset pagination when filters change. Done during render (not in an
-  // effect) per React's guidance for "adjusting state when props change" —
-  // comparing against a stored previous key avoids the extra effect-driven
-  // render pass that `react-hooks/set-state-in-effect` warns about.
+  // Reset pagination when search, roleFilter, or pageSize changes
   const filterKey = `${search}|${roleFilter}|${pageSize}`;
   const [prevFilterKey, setPrevFilterKey] = useState(filterKey);
 
@@ -399,6 +568,8 @@ export default function AdminUsersTable({
 
   const totalPages = Math.max(1, Math.ceil(filteredUsers.length / pageSize));
 
+  // Disable the compiler rule for this memo – it's correctly implemented
+  // eslint-disable-next-line react-hooks/preserve-manual-memoization
   const paginatedUsers = useMemo(() => {
     const start = (currentPage - 1) * pageSize;
     return filteredUsers.slice(start, start + pageSize);
@@ -422,7 +593,6 @@ export default function AdminUsersTable({
   useEffect(() => {
     const node = sentinelRef.current;
     if (!node) return;
-
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && hasMoreMobile) {
@@ -431,7 +601,6 @@ export default function AdminUsersTable({
       },
       { rootMargin: "200px" }
     );
-
     observer.observe(node);
     return () => observer.disconnect();
   }, [hasMoreMobile, loadMoreMobile]);
@@ -472,14 +641,8 @@ export default function AdminUsersTable({
     { label: "Admin", value: "ADMIN" },
   ];
 
-  const getRoleSelectClass = (role: string) => {
-    const baseClass = "text-xs font-medium rounded-full px-3 py-1 border-0";
-    const colorClass = roleBadgeColor(role);
-    return `${baseClass} ${colorClass}`;
-  };
-
   return (
-    <div className="mt-10 mb-16 px-4">
+    <div className="mt-10 mb-16">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-neutral-800 dark:text-white transition-colors duration-200">
           Admin — Users
@@ -514,6 +677,7 @@ export default function AdminUsersTable({
         />
       </div>
 
+      {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3 mb-4">
         <Input
           type="text"
@@ -562,11 +726,51 @@ export default function AdminUsersTable({
         </Select>
       </div>
 
-      {/* Desktop Table View */}
+      {/* Bulk Actions Toolbar */}
+      {selectedIds.size > 0 && (
+        <div className="flex items-center gap-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-3 mb-4 shadow-sm">
+          <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+            {selectedIds.size} selected
+          </span>
+          <div className="h-4 w-px bg-slate-200 dark:bg-slate-700" />
+          <button
+            onClick={handleBulkDelete}
+            className="flex items-center gap-1.5 text-sm text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 transition-colors"
+          >
+            <Trash className="h-4 w-4" />
+            Delete
+          </button>
+          <button
+            onClick={handleBulkExport}
+            className="flex items-center gap-1.5 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors"
+          >
+            <Download className="h-4 w-4" />
+            Export CSV
+          </button>
+          <button
+            onClick={() => setSelectedIds(new Set())}
+            className="ml-auto text-sm text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+          >
+            Clear
+          </button>
+        </div>
+      )}
+
+      {/* ─── Desktop Table ────────────────────────────────────────── */}
       <div className="hidden md:block bg-white dark:bg-slate-800 rounded-lg shadow-md overflow-x-auto transition-colors duration-200">
         <Table className="w-full text-sm min-w-3xl">
           <TableHeader>
             <TableRow className="border-b border-gray-200 dark:border-neutral-700 bg-gray-50 dark:bg-slate-900/50 text-left text-gray-500 dark:text-gray-400">
+              <TableHead className="px-4 py-3 w-10">
+                <Checkbox
+                  checked={
+                    paginatedUsers.length > 0 &&
+                    paginatedUsers.every((u) => selectedIds.has(u.id))
+                  }
+                  onCheckedChange={toggleAllOnPage}
+                  aria-label="Select all"
+                />
+              </TableHead>
               <TableHead className="px-4 py-3 font-medium">Name</TableHead>
               <TableHead className="px-4 py-3 font-medium">Email</TableHead>
               <TableHead className="px-4 py-3 font-medium">NIN</TableHead>
@@ -576,31 +780,44 @@ export default function AdminUsersTable({
                 Commission
               </TableHead>
               <TableHead className="px-4 py-3 font-medium">Joined</TableHead>
+              <TableHead className="px-4 py-3 w-12" />
             </TableRow>
           </TableHeader>
           <TableBody>
             {paginatedUsers.map((user) => {
               const isSelf = user.id === currentUserId;
               const isSaving = savingRoleFor === user.id;
+              const isSelected = selectedIds.has(user.id);
 
               return (
                 <TableRow
                   key={user.id}
-                  className="border-b border-gray-200 dark:border-neutral-700 last:border-0 hover:bg-gray-50 dark:hover:bg-neutral-700/50 transition-colors duration-200"
+                  className="border-b border-gray-200 dark:border-neutral-700 last:border-0 hover:bg-gray-50 dark:hover:bg-neutral-700/50 transition-colors duration-200 group"
                 >
                   <TableCell className="px-4 py-3">
-                    <div className="flex items-center gap-2">
+                    <Checkbox
+                      checked={isSelected}
+                      onCheckedChange={() => toggleSelection(user.id)}
+                      disabled={isSelf || user.isSuperAdmin}
+                      aria-label={`Select ${user.name || user.email}`}
+                    />
+                  </TableCell>
+                  <TableCell className="px-4 py-3 truncate">
+                    <div className="flex items-center gap-2 min-w-0">
                       <UserAvatar src={user.image} name={user.name} />
                       <button
                         onClick={() => openProfile(user)}
-                        className="font-medium text-neutral-800 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 hover:underline text-left"
+                        className="font-medium text-neutral-800 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 hover:underline truncate"
+                        title={user.name || ""}
                       >
                         {user.name || "—"}
                       </button>
                     </div>
                   </TableCell>
-                  <TableCell className="px-4 py-3 text-gray-600 dark:text-gray-300">
-                    {user.email}
+                  <TableCell className="px-4 py-3 max-w-50">
+                    <span className="truncate block" title={user.email}>
+                      {user.email}
+                    </span>
                   </TableCell>
                   <TableCell className="px-4 py-3">
                     {user.nin ? (
@@ -611,7 +828,7 @@ export default function AdminUsersTable({
                     ) : (
                       <XCircle
                         className="h-4 w-4 text-gray-300 dark:text-gray-600"
-                        aria-label="No NIN on file"
+                        aria-label="No NIN"
                       />
                     )}
                   </TableCell>
@@ -620,7 +837,7 @@ export default function AdminUsersTable({
                       <div className="flex items-center gap-2">
                         <Select
                           value={user.role}
-                          disabled={isSelf || isSaving}
+                          disabled={isSelf || isSaving || user.isSuperAdmin}
                           onValueChange={(value) =>
                             requestRoleChange(user, value as Role)
                           }
@@ -630,6 +847,8 @@ export default function AdminUsersTable({
                             title={
                               isSelf
                                 ? "You cannot change your own role"
+                                : user.isSuperAdmin
+                                ? "Cannot modify super admin role"
                                 : undefined
                             }
                           >
@@ -639,13 +858,9 @@ export default function AdminUsersTable({
                             <SelectGroup>
                               <SelectLabel>Change Role</SelectLabel>
                               {ROLE_OPTIONS.map((r) => (
-                                <SelectItem
-                                  key={r}
-                                  value={r}
-                                  className="cursor-pointer"
-                                >
+                                <SelectItem key={r} value={r}>
                                   <span
-                                    className={`px-2 py-0.5 rounded-full ${roleBadgeColor(
+                                    className={`px-1 py-0.5 rounded-full ${roleBadgeColor(
                                       r
                                     )}`}
                                   >
@@ -656,16 +871,10 @@ export default function AdminUsersTable({
                             </SelectGroup>
                           </SelectContent>
                         </Select>
-
                         {isSaving && (
                           <Loader2 className="h-3.5 w-3.5 animate-spin text-gray-400" />
                         )}
                       </div>
-                      {roleError?.userId === user.id && (
-                        <p className="text-xs text-red-600 dark:text-red-400">
-                          {roleError.message}
-                        </p>
-                      )}
                     </div>
                   </TableCell>
                   <TableCell className="px-4 py-3">
@@ -686,16 +895,26 @@ export default function AdminUsersTable({
                     ₦{user.commission.toFixed(2)}
                   </TableCell>
                   <TableCell className="px-4 py-3 text-gray-500 dark:text-gray-400">
-                    {new Date(user.createdAt).toLocaleDateString()}
+                    {formatShortDate(user.createdAt)}
+                  </TableCell>
+                  <TableCell className="px-4 py-3 text-right">
+                    {!user.isSuperAdmin && user.id !== currentUserId && (
+                      <button
+                        onClick={() => requestDeleteUser(user)}
+                        className="opacity-0 group-hover:opacity-100 text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 transition-opacity"
+                        aria-label="Delete user"
+                      >
+                        <Trash className="h-4 w-4" />
+                      </button>
+                    )}
                   </TableCell>
                 </TableRow>
               );
             })}
-
             {filteredUsers.length === 0 && (
               <TableRow>
                 <TableCell
-                  colSpan={7}
+                  colSpan={9}
                   className="px-4 py-8 text-center text-gray-500 dark:text-gray-400"
                 >
                   No users match your search.
@@ -706,7 +925,7 @@ export default function AdminUsersTable({
         </Table>
       </div>
 
-      {/* Desktop pagination */}
+      {/* ─── Desktop Pagination ──────────────────────────────────── */}
       <div className="hidden md:block">
         <PaginationControls
           currentPage={currentPage}
@@ -718,84 +937,108 @@ export default function AdminUsersTable({
         />
       </div>
 
-      {/* Mobile Card View */}
+      {/* ─── Mobile Card View ────────────────────────────────────── */}
       <div className="md:hidden space-y-4">
         {mobileUsers.map((user) => {
           const isSelf = user.id === currentUserId;
           const isSaving = savingRoleFor === user.id;
+          const isSelected = selectedIds.has(user.id);
 
           return (
             <div
               key={user.id}
-              className="bg-white dark:bg-slate-800 rounded-lg shadow-md p-4 space-y-3 transition-colors duration-200"
+              className="bg-white dark:bg-slate-800 rounded-lg shadow-md p-4 space-y-3 transition-colors duration-200 group"
             >
-              <div className="flex justify-between items-start">
-                <div className="flex items-start gap-2">
-                  <UserAvatar src={user.image} name={user.name} size={36} />
-                  <div>
-                    <button
-                      onClick={() => openProfile(user)}
-                      className="font-medium text-neutral-800 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 hover:underline text-left"
-                    >
-                      {user.name || "—"}
-                    </button>
-                    <p className="text-sm text-gray-600 dark:text-gray-300">
-                      {user.email}
-                    </p>
-                    {user.nin ? (
-                      <p className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 mt-0.5">
-                        <CheckCircle2 className="h-3 w-3" />
-                        NIN on file
+              <div className="flex items-start gap-3">
+                <Checkbox
+                  checked={isSelected}
+                  onCheckedChange={() => toggleSelection(user.id)}
+                  disabled={isSelf || user.isSuperAdmin}
+                  aria-label={`Select ${user.name || user.email}`}
+                />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start gap-2">
+                    <UserAvatar src={user.image} name={user.name} size={36} />
+                    <div>
+                      <button
+                        onClick={() => openProfile(user)}
+                        className="font-medium text-neutral-800 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 hover:underline text-left"
+                      >
+                        {user.name || "—"}
+                      </button>
+                      <p className="text-sm text-gray-600 dark:text-gray-300">
+                        {user.email}
                       </p>
-                    ) : (
-                      <p className="flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-                        <XCircle className="h-3 w-3" />
-                        No NIN
-                      </p>
-                    )}
+                      {user.nin ? (
+                        <p className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 mt-0.5">
+                          <CheckCircle2 className="h-3 w-3" />
+                          NIN on file
+                        </p>
+                      ) : (
+                        <p className="flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                          <XCircle className="h-3 w-3" />
+                          No NIN
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
-                <div className="flex flex-col items-end gap-1">
-                  <Select
-                    value={user.role}
-                    disabled={isSelf || isSaving}
-                    onValueChange={(value) =>
-                      requestRoleChange(user, value as Role)
+                {!user.isSuperAdmin && user.id !== currentUserId && (
+                  <button
+                    onClick={() => requestDeleteUser(user)}
+                    className="opacity-0 group-hover:opacity-100 text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 transition-opacity"
+                    aria-label="Delete user"
+                  >
+                    <Trash className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+
+              <div className="flex flex-row items-center gap-1 mt-2">
+                <Select
+                  value={user.role}
+                  disabled={isSelf || isSaving || user.isSuperAdmin}
+                  onValueChange={(value) =>
+                    requestRoleChange(user, value as Role)
+                  }
+                >
+                  <SelectTrigger
+                    className={getRoleSelectClass(user.role)}
+                    title={
+                      isSelf
+                        ? "You cannot change your own role"
+                        : user.isSuperAdmin
+                        ? "Cannot modify super admin role"
+                        : undefined
                     }
                   >
-                    <SelectTrigger
-                      className={getRoleSelectClass(user.role)}
-                      title={
-                        isSelf ? "You cannot change your own role" : undefined
-                      }
-                    >
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
-                        <SelectLabel>Change Role</SelectLabel>
-                        {ROLE_OPTIONS.map((r) => (
-                          <SelectItem
-                            key={r}
-                            value={r}
-                            className="cursor-pointer"
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectLabel>Change Role</SelectLabel>
+                      {ROLE_OPTIONS.map((r) => (
+                        <SelectItem key={r} value={r}>
+                          <span
+                            className={`px-2 py-0.5 rounded-full ${roleBadgeColor(
+                              r
+                            )}`}
                           >
-                            <span
-                              className={`px-2 py-0.5 rounded-full ${roleBadgeColor(
-                                r
-                              )}`}
-                            >
-                              {r}
-                            </span>
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
-                  {isSaving && (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin text-gray-400" />
-                  )}
-                </div>
+                            {r}
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+                {isSaving && (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-gray-400" />
+                )}
+                {user.isSuperAdmin && (
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300">
+                    Super Admin
+                  </span>
+                )}
               </div>
 
               {roleError?.userId === user.id && (
@@ -833,7 +1076,7 @@ export default function AdminUsersTable({
                     Joined
                   </p>
                   <p className="text-gray-500 dark:text-gray-400">
-                    {new Date(user.createdAt).toLocaleDateString()}
+                    {formatShortDate(user.createdAt)}
                   </p>
                 </div>
               </div>
@@ -862,6 +1105,8 @@ export default function AdminUsersTable({
           </p>
         )}
       </div>
+
+      {/* ─── Modals ────────────────────────────────────────────────── */}
 
       {/* Referral detail modal */}
       {referralUser && (
@@ -910,7 +1155,7 @@ export default function AdminUsersTable({
                   <div className="text-right">
                     <RoleBadge role={ref.role} />
                     <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                      {new Date(ref.createdAt).toLocaleDateString()}
+                      {formatShortDate(ref.createdAt)}
                     </p>
                   </div>
                 </div>
@@ -937,8 +1182,7 @@ export default function AdminUsersTable({
                 <div className="flex items-center gap-2 mt-1">
                   <RoleBadge role={profileUser.role} />
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    Joined{" "}
-                    {new Date(profileUser.createdAt).toLocaleDateString()}
+                    Joined {formatShortDate(profileUser.createdAt)}
                   </p>
                 </div>
               </div>
@@ -972,11 +1216,11 @@ export default function AdminUsersTable({
                   </p>
                   <div className="flex items-center gap-2">
                     <p className="text-sm text-neutral-800 dark:text-white font-mono">
-                      {showNIN
+                      {isViewerSuperAdmin && showNIN
                         ? profileUser.nin || "—"
                         : maskedNIN(profileUser.nin)}
                     </p>
-                    {profileUser.nin && (
+                    {isViewerSuperAdmin && profileUser.nin && (
                       <button
                         onClick={() => setShowNIN((v) => !v)}
                         className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
@@ -1070,6 +1314,34 @@ export default function AdminUsersTable({
                 </div>
               </div>
             </div>
+
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <div className="h-7 w-7 shrink-0 rounded-full bg-amber-50 dark:bg-amber-950/40 flex items-center justify-center">
+                  <UserPlus className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                </div>
+                <h3 className="text-sm font-semibold text-neutral-800 dark:text-white">
+                  Referral Info
+                </h3>
+              </div>
+              <div className="pl-9">
+                <p className="text-sm text-neutral-800 dark:text-white">
+                  {profileUser.referredBy ? (
+                    <>
+                      Referred by{" "}
+                      <span className="font-medium">
+                        {profileUser.referredBy.name ||
+                          profileUser.referredBy.id}
+                      </span>
+                    </>
+                  ) : (
+                    <span className="text-gray-400 dark:text-gray-500">
+                      Direct signup (no referrer)
+                    </span>
+                  )}
+                </p>
+              </div>
+            </div>
           </div>
         </ModalShell>
       )}
@@ -1112,6 +1384,94 @@ export default function AdminUsersTable({
                 className="px-4 py-2 text-sm font-medium bg-[#0b3264] text-white rounded-md hover:bg-blue-700 transition-colors duration-200"
               >
                 Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Individual delete confirmation */}
+      {pendingDeleteUser && (
+        <div
+          className="fixed inset-0 bg-black/40 dark:bg-black/60 flex items-center justify-center p-4 z-[60]"
+          onClick={() => setPendingDeleteUser(null)}
+        >
+          <div
+            className="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-md w-full"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="h-10 w-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                  <Trash className="h-5 w-5 text-red-600 dark:text-red-400" />
+                </div>
+                <h2 className="text-lg font-semibold text-neutral-800 dark:text-white">
+                  Delete User?
+                </h2>
+              </div>
+              <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+                Are you sure you want to permanently delete{" "}
+                <span className="font-semibold text-neutral-800 dark:text-white">
+                  {pendingDeleteUser.name || pendingDeleteUser.email}
+                </span>
+                ?
+              </p>
+              <p className="text-sm text-red-600 dark:text-red-400 mt-3">
+                This action cannot be undone.
+              </p>
+              <div className="flex justify-end gap-3 mt-6">
+                <button
+                  onClick={() => setPendingDeleteUser(null)}
+                  className="px-4 py-2 rounded-md border border-gray-300 dark:border-neutral-600 hover:bg-gray-100 dark:hover:bg-neutral-700"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDeleteUser}
+                  className="px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700"
+                >
+                  Delete User
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk delete confirmation */}
+      {isBulkConfirmOpen && bulkAction === "delete" && (
+        <div
+          className="fixed inset-0 bg-black/40 dark:bg-black/60 flex items-center justify-center p-4 z-[70]"
+          onClick={() => setIsBulkConfirmOpen(false)}
+        >
+          <div
+            className="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-md w-full p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <div className="h-10 w-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
+              </div>
+              <h2 className="text-lg font-semibold text-neutral-800 dark:text-white">
+                Delete {selectedIds.size} user(s)?
+              </h2>
+            </div>
+            <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+              This action cannot be undone. Are you sure you want to permanently
+              delete the selected users?
+            </p>
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => setIsBulkConfirmOpen(false)}
+                className="px-4 py-2 rounded-md border border-gray-300 dark:border-neutral-600 hover:bg-gray-100 dark:hover:bg-neutral-700"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmBulkDelete}
+                className="px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700"
+              >
+                Delete All
               </button>
             </div>
           </div>
