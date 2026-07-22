@@ -20,6 +20,7 @@ const adapter = new PrismaPg(pool);
 export const prisma = globalForPrisma.prisma ?? new PrismaClient({ adapter });
 
 if (process.env.NODE_ENV !== "production") {
+  // console.log("DATABASE_URL:", process.env.DATABASE_URL);
   globalForPrisma.prisma = prisma;
   globalForPrisma.pool = pool;
 }

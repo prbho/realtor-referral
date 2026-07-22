@@ -13,7 +13,6 @@ model User {
   password           String?
   image              String?
   role               Role      @default(USER)
-  isSuperAdmin       Boolean   @default(false)
   referralCode       String?   @unique
   referredBy         String?
   referralCount      Int       @default(0)
@@ -35,6 +34,8 @@ model User {
   marketingEmails    Boolean   @default(true)
   themePreference    String?   @default("system")
   nin                String?   @unique
+  isSuperAdmin       Boolean   @default(false)
+  ninVerified        Boolean   @default(false)
   accounts           Account[]
   sessions           Session[]
   referrer           User?     @relation("Referrals", fields: [referredBy], references: [id])
@@ -84,10 +85,14 @@ model VerificationToken {
 }
 
 model SystemSettings {
-  id                String   @id @default("singleton")
-  emailLimitEnabled Boolean  @default(true)
-  emailDailyLimit   Int      @default(100)
-  updatedAt         DateTime @updatedAt
+  id                      String   @id @default("singleton")
+  emailLimitEnabled       Boolean  @default(true)
+  emailDailyLimit         Int      @default(100)
+  updatedAt               DateTime @updatedAt
+  ninVerificationRequired Boolean  @default(true)
+  registrationPaused      Boolean  @default(false)      
+  registrationPauseReason String?  @db.Text            
+  registrationPauseUntil  DateTime?                    
 }
 
 model EmailLog {

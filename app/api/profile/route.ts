@@ -19,7 +19,7 @@ const OPTIONAL_TEXT_FIELDS = [
   "accountName",
   "accountNumber",
   "bankName",
-  "nin",
+  // "nin",
 ] as const;
 
 export async function PATCH(request: NextRequest) {
@@ -111,6 +111,17 @@ export async function PATCH(request: NextRequest) {
           );
         }
         updates.nin = trimmedNin;
+      }
+    }
+
+    if (typeof body.nin === "string") {
+      const nin = body.nin.trim() || null;
+      if (nin !== user.nin) {
+        updates.nin = nin;
+        updates.ninVerified = false;
+        messages.push(
+          "NIN updated. Please verify it using the verification button."
+        );
       }
     }
 

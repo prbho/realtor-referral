@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { isValidEmail, isValidNIN } from "@/lib/validation";
@@ -48,6 +48,7 @@ type UserData = {
   zipCode: string | null;
   country: string | null;
   nin: string | null;
+  ninVerified: boolean; // ✅ added
   accountName: string | null;
   accountNumber: string | null;
   bankName: string | null;
@@ -93,7 +94,30 @@ export default function ProfileForm({ user }: { user: UserData }) {
   const { update } = useSession();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [currentStep, setCurrentStep] = useState(0);
+  // ─── URL hash → step index ───────────────────────────────────
+  const getStepFromHash = (hash: string): number => {
+    if (hash === "#nin" || hash === "#identification") return 2;
+    // Map other hashes if needed
+    return 0; // default to personal
+  };
+
+  const [currentStep, setCurrentStep] = useState(() => {
+    if (typeof window !== "undefined") {
+      return getStepFromHash(window.location.hash);
+    }
+    return 0;
+  });
+
+  // ─── Listen for hash changes ──────────────────────────────
+  useEffect(() => {
+    const handleHashChange = () => {
+      const step = getStepFromHash(window.location.hash);
+      setCurrentStep(step);
+    };
+    window.addEventListener("hashchange", handleHashChange);
+    return () => window.removeEventListener("hashchange", handleHashChange);
+  }, []);
+
   const isLastStep = currentStep === STEPS.length - 1;
 
   const [image, setImage] = useState(user.image);
@@ -124,6 +148,60 @@ export default function ProfileForm({ user }: { user: UserData }) {
     saved: false,
     error: "",
   });
+
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [ninVerified, setNinVerified] = useState(user.ninVerified || false);
+
+  const handleVerifyNin = async () => {
+    const nin = formData.nin.trim();
+    if (!nin) {
+      setStepStatus({
+        loading: false,
+        saved: false,
+        error: "Please enter your NIN first.",
+      });
+      return;
+    }
+
+    setIsVerifying(true);
+    setStepStatus({ loading: false, saved: false, error: "" });
+
+    try {
+      const res = await fetch("/api/profile/verify-nin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nin }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        setStepStatus({
+          loading: false,
+          saved: false,
+          error: data.error || "Verification failed. Please try again.",
+        });
+      } else {
+        setNinVerified(true);
+        setStepStatus({
+          loading: false,
+          saved: true,
+          error: "",
+        });
+        setTimeout(
+          () => setStepStatus((prev) => ({ ...prev, saved: false })),
+          3000
+        );
+      }
+    } catch {
+      setStepStatus({
+        loading: false,
+        saved: false,
+        error: "Something went wrong. Please try again.",
+      });
+    } finally {
+      setIsVerifying(false);
+    }
+  };
 
   const initials = user.name
     ? user.name
@@ -394,6 +472,7 @@ export default function ProfileForm({ user }: { user: UserData }) {
                     onClick={() => goToStep(index)}
                     disabled={!isClickable}
                     className="flex flex-col items-center gap-1.5 group"
+                    id={step.id} // optional, can be used for CSS targeting
                   >
                     <div
                       className={`h-10 w-10 rounded-full flex items-center justify-center border-2 transition-colors duration-200 ${
@@ -604,20 +683,51 @@ export default function ProfileForm({ user }: { user: UserData }) {
                       <Label htmlFor="nin">
                         National Identification Number (NIN) *
                       </Label>
-                      <Input
-                        id="nin"
-                        name="nin"
-                        value={formData.nin}
-                        onChange={handleChange}
-                        placeholder="12345678901"
-                        inputMode="numeric"
-                        maxLength={11}
-                        required
-                      />
+                      <div className="flex items-end gap-3">
+                        <div className="flex-1">
+                          <Input
+                            id="nin"
+                            name="nin"
+                            value={formData.nin}
+                            onChange={handleChange}
+                            placeholder="12345678901"
+                            inputMode="numeric"
+                            maxLength={11}
+                            required
+                          />
+                        </div>
+                        {/* Show verify button only if NIN is filled and not verified */}
+                        {formData.nin.trim() && !ninVerified && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={handleVerifyNin}
+                            disabled={isVerifying}
+                            className="shrink-0"
+                          >
+                            {isVerifying ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              "Verify NIN"
+                            )}
+                          </Button>
+                        )}
+                        {/* Show verified status */}
+                        {ninVerified && (
+                          <span className="shrink-0 flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
+                            <Check className="h-4 w-4" /> Verified
+                          </span>
+                        )}
+                      </div>
                       <p className="text-xs text-gray-500 dark:text-gray-400">
                         Your 11-digit NIN. This is kept private and used only
                         for identity verification.
                       </p>
+                      {!ninVerified && formData.nin.trim() && (
+                        <p className="text-xs text-amber-600 dark:text-amber-400">
+                          Please verify your NIN to access referral features.
+                        </p>
+                      )}
                     </div>
                   </CardContent>
                 </>

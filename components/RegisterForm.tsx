@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { isValidEmail, isValidPassword } from "@/lib/validation";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Clock } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -30,11 +30,77 @@ export default function RegisterForm() {
   const [referrerLoading, setReferrerLoading] = useState(!!referralCode);
   const [showPassword, setShowPassword] = useState(false);
 
+  // Registration pause state
+  const [regPaused, setRegPaused] = useState(false);
+  const [pauseReason, setPauseReason] = useState<string | null>(null);
+  const [pauseUntil, setPauseUntil] = useState<string | null>(null);
+  const [timeLeft, setTimeLeft] = useState<{
+    hours: number;
+    minutes: number;
+    seconds: number;
+  } | null>(null);
+
+  // Fetch registration status
+  useEffect(() => {
+    fetch("/api/auth/registration-status")
+      .then((res) => res.json())
+      .then((data) => {
+        setRegPaused(data.paused);
+        setPauseReason(data.reason);
+        setPauseUntil(data.pauseUntil);
+      })
+      .catch(() => {});
+  }, []);
+
+  // Countdown timer – fixed to avoid setState in effect body
+  useEffect(() => {
+    // If no pause is active, clear any interval and reset timeLeft (handled by cleanup)
+    if (!regPaused || !pauseUntil) {
+      // timeLeft will be set to null by cleanup if an interval was running
+      return;
+    }
+
+    const updateTimeLeft = () => {
+      const now = Date.now();
+      const target = new Date(pauseUntil).getTime();
+      const diff = target - now;
+
+      if (diff <= 0) {
+        // Pause expired – refresh status
+        fetch("/api/auth/registration-status")
+          .then((res) => res.json())
+          .then((data) => {
+            setRegPaused(data.paused);
+            setPauseReason(data.reason);
+            setPauseUntil(data.pauseUntil);
+          })
+          .catch(() => {});
+        clearInterval(intervalId);
+        setTimeLeft(null);
+        return;
+      }
+
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+      setTimeLeft({ hours, minutes, seconds });
+    };
+
+    const intervalId = setInterval(updateTimeLeft, 1000);
+    // Call immediately to set initial value
+    updateTimeLeft();
+
+    return () => {
+      clearInterval(intervalId);
+      // Reset timeLeft when interval stops (pause ended or component unmounts)
+      setTimeLeft(null);
+    };
+  }, [regPaused, pauseUntil]);
+
+  // Fetch referrer name (unchanged)
   useEffect(() => {
     if (!referralCode) return;
-
     let cancelled = false;
-
     fetch(`/api/referrer?code=${encodeURIComponent(referralCode)}`)
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
@@ -46,7 +112,6 @@ export default function RegisterForm() {
       .finally(() => {
         if (!cancelled) setReferrerLoading(false);
       });
-
     return () => {
       cancelled = true;
     };
@@ -56,6 +121,11 @@ export default function RegisterForm() {
     e.preventDefault();
     setError("");
     setSuccess("");
+
+    if (regPaused) {
+      setError("Registration is currently paused.");
+      return;
+    }
 
     if (!isValidEmail(formData.email)) {
       setError("Please enter a valid email address");
@@ -87,13 +157,20 @@ export default function RegisterForm() {
       }
 
       if (!response.ok) {
-        throw new Error(data.error || "Registration failed");
+        if (response.status === 503 && data.pauseReason) {
+          setRegPaused(true);
+          setPauseReason(data.pauseReason);
+          setPauseUntil(data.pauseUntil);
+          setError(data.error || "Registration is paused.");
+        } else {
+          throw new Error(data.error || "Registration failed");
+        }
+      } else {
+        setSuccess(
+          data.message ||
+            "Account created! Please check your email to verify your account."
+        );
       }
-
-      setSuccess(
-        data.message ||
-          "Account created! Please check your email to verify your account."
-      );
     } catch (err: unknown) {
       console.error("Registration error:", err);
       setError((err as Error).message);
@@ -101,6 +178,8 @@ export default function RegisterForm() {
       setIsLoading(false);
     }
   };
+
+  const isButtonDisabled = isLoading || regPaused;
 
   return (
     <Card className="w-full max-w-md mx-auto mt-10 bg-white dark:bg-[#161b22] border border-slate-200 dark:border-slate-700/50 shadow-sm rounded-xl transition-colors duration-300">
@@ -132,6 +211,37 @@ export default function RegisterForm() {
         {success ? (
           <div className="text-sm text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-900/30 p-4 rounded-md transition-colors duration-200">
             {success}
+          </div>
+        ) : regPaused ? (
+          <div className="space-y-3">
+            <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 p-4 rounded-md">
+              <p className="text-amber-800 dark:text-amber-200 font-medium flex items-center gap-2">
+                <Clock className="h-4 w-4" />
+                Registration is temporarily paused
+              </p>
+              {pauseReason && (
+                <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
+                  {pauseReason}
+                </p>
+              )}
+              {timeLeft && (
+                <p className="text-sm text-amber-700 dark:text-amber-300 mt-2 font-mono">
+                  Resumes in {timeLeft.hours}h {timeLeft.minutes}m{" "}
+                  {timeLeft.seconds}s
+                </p>
+              )}
+              {!pauseUntil && (
+                <p className="text-sm text-amber-700 dark:text-amber-300 mt-2">
+                  No resumption time set – check back later.
+                </p>
+              )}
+            </div>
+            <button
+              disabled
+              className="w-full bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 font-medium py-2.5 px-4 rounded-md cursor-not-allowed"
+            >
+              Registration disabled
+            </button>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -205,7 +315,7 @@ export default function RegisterForm() {
 
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isButtonDisabled}
               className="w-full bg-[#0b3264] hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500 text-white font-medium py-2.5 px-4 rounded-md transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? "Creating account..." : "Register"}

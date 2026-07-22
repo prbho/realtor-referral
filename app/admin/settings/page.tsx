@@ -1,4 +1,3 @@
-// app/admin/settings/page.tsx
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { authOptions } from "../../api/auth/[...nextauth]/route";
@@ -12,6 +11,7 @@ export default async function AdminSettingsPage() {
     redirect("/login");
   }
 
+  // Only admins can access – super admins have role "ADMIN" as well
   if (session.user.role !== "ADMIN") {
     redirect("/dashboard");
   }
@@ -24,6 +24,12 @@ export default async function AdminSettingsPage() {
       initialSettings={{
         emailLimitEnabled: settings.emailLimitEnabled,
         emailDailyLimit: settings.emailDailyLimit,
+        ninVerificationRequired: settings.ninVerificationRequired,
+        registrationPaused: settings.registrationPaused,
+        registrationPauseReason: settings.registrationPauseReason,
+        registrationPauseUntil: settings.registrationPauseUntil
+          ? settings.registrationPauseUntil.toISOString()
+          : null,
       }}
       emailsSentToday={emailsSentToday}
     />

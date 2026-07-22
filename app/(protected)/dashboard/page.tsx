@@ -1,29 +1,20 @@
-// app/dashboard/page.tsx
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { authOptions } from "../../api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
 import { getSystemSettings, getEmailsSentToday } from "@/lib/systemSettings";
-import CopyButton from "@/components/CopyButton";
 import Greeting from "@/components/Greeting";
 import Link from "next/link";
-import {
-  Link2Icon,
-  UserRoundArrowLeft,
-  Users,
-  Wallet,
-  AlertCircle,
-  Zap,
-} from "lucide-react";
+import { UserRoundArrowLeft, AlertCircle, Zap } from "lucide-react";
 import Image from "next/image";
-import StatCard from "@/components/StatCard";
 import AdminOverview from "@/components/AdminOverview";
+import DashboardStats from "@/components/DashboardStats";
 
 export const metadata = {
   title: "Dashboard | Regal PDC Realtor",
 };
 
-// ─── UserAvatar (Server Component) ──────────────────────────
+// ─── UserAvatar ──────────────────────────────────────────────
 function UserAvatar({
   src,
   name,
@@ -76,19 +67,37 @@ const REQUIRED_PROFILE_FIELDS = [
   { key: "accountName", label: "Account Name" },
   { key: "accountNumber", label: "Account Number" },
   { key: "bankName", label: "Bank Name" },
+  { key: "nin", label: "NIN" },
 ] as const;
 
-// ─── Main Component ──────────────────────────────────────────
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
-
-  if (!session) {
-    redirect("/login");
-  }
+  if (!session) redirect("/login");
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    include: {
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      image: true,
+      phone: true,
+      streetAddress: true,
+      apartment: true,
+      city: true,
+      state: true,
+      zipCode: true,
+      country: true,
+      accountName: true,
+      accountNumber: true,
+      bankName: true,
+      nin: true,
+      ninVerified: true,
+      referralCode: true,
+      referralCount: true,
+      commission: true,
+      isSuperAdmin: true,
       referrals: {
         select: { id: true, name: true, email: true, createdAt: true },
         orderBy: { createdAt: "desc" },
@@ -96,9 +105,7 @@ export default async function DashboardPage() {
     },
   });
 
-  if (!user) {
-    redirect("/login");
-  }
+  if (!user) redirect("/login");
 
   const isAdmin = user.role === "ADMIN";
 
@@ -149,6 +156,10 @@ export default async function DashboardPage() {
       })()
     : null;
 
+  // ─── Fetch NIN verification setting ──────────────────────────
+  const systemSettings = await getSystemSettings();
+  const ninVerificationRequired = systemSettings.ninVerificationRequired;
+
   const referralLink = `${process.env.NEXTAUTH_URL}/register?ref=${user.referralCode}`;
 
   const today = new Date().toLocaleDateString(undefined, {
@@ -160,7 +171,6 @@ export default async function DashboardPage() {
 
   return (
     <div className="p-6 md:p-8 space-y-8 relative">
-      {/* Subtle background */}
       <div className="absolute inset-0 -z-10 bg-linear-to-b from-blue-50/30 to-white dark:from-slate-900/50 dark:to-slate-900" />
 
       {/* ─── Header ─────────────────────────────────────────────── */}
@@ -215,60 +225,15 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      {/* ─── Platform Overview ────────────────────────────────────── */}
-
+      {/* ─── Platform Overview ────────────────────────────────── */}
       {isAdmin && platformStats && <AdminOverview stats={platformStats} />}
 
-      {/* ─── Stats Grid ────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <StatCard
-          icon={<Users className="h-5 w-5 text-blue-600 dark:text-blue-400" />}
-          label="Total Referrals"
-          value={user.referralCount}
-          change="+0 this week"
-          bg="bg-blue-50 dark:bg-blue-950/20"
-        />
-        <StatCard
-          icon={
-            <Wallet className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-          }
-          label="Commission Earned"
-          value={`₦${user.commission.toFixed(2)}`}
-          bg="bg-emerald-50 dark:bg-emerald-950/20"
-        />
-        <StatCard
-          icon={
-            <Link2Icon className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-          }
-          label="Referral Code"
-          value={user.referralCode ?? ""}
-          copyable
-          copyValue={user.referralCode ?? ""}
-          bg="bg-purple-50 dark:bg-purple-950/20"
-        />
-      </div>
-
-      {/* ─── Referral Link Card ────────────────────────────────── */}
-      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-6 transition-colors duration-200">
-        <div className="flex items-center gap-2 mb-4">
-          <Link2Icon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-          <h2 className="font-semibold text-lg text-slate-900 dark:text-white">
-            Your Referral Link
-          </h2>
-        </div>
-        <div className="flex items-center gap-2 flex-col sm:flex-row">
-          <input
-            type="text"
-            value={referralLink}
-            readOnly
-            className="flex-1 w-full p-2.5 border rounded-md text-sm bg-gray-50 dark:bg-neutral-700 dark:border-neutral-600 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors duration-200"
-          />
-          <CopyButton text={referralLink} />
-        </div>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
-          Share this link with friends and earn commissions on their referrals.
-        </p>
-      </div>
+      {/* ─── Stats & Referral Link ───────────────────────────── */}
+      <DashboardStats
+        user={user}
+        referralLink={referralLink}
+        ninVerificationRequired={ninVerificationRequired}
+      />
 
       {/* ─── Referrals List ────────────────────────────────────── */}
       <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-6 transition-colors duration-200">
@@ -290,29 +255,22 @@ export default async function DashboardPage() {
           </div>
         ) : (
           <ul className="divide-y divide-slate-200 dark:divide-neutral-700">
-            {user.referrals.map(
-              (ref: {
-                id: string;
-                name: string | null;
-                email: string;
-                createdAt: Date;
-              }) => (
-                <li key={ref.id} className="py-3 flex items-center gap-3">
-                  <UserAvatar src={user.image} name={ref.name} size={36} />
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium text-slate-900 dark:text-white truncate">
-                      {ref.name || "Unnamed"}
-                    </p>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 truncate">
-                      {ref.email}
-                    </p>
-                  </div>
-                  <p className="text-xs text-slate-400 dark:text-slate-500 shrink-0">
-                    {new Date(ref.createdAt).toLocaleDateString()}
+            {user.referrals.map((ref) => (
+              <li key={ref.id} className="py-3 flex items-center gap-3">
+                <UserAvatar src={user.image} name={ref.name} size={36} />
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium text-slate-900 dark:text-white truncate">
+                    {ref.name || "Unnamed"}
                   </p>
-                </li>
-              )
-            )}
+                  <p className="text-sm text-slate-500 dark:text-slate-400 truncate">
+                    {ref.email}
+                  </p>
+                </div>
+                <p className="text-xs text-slate-400 dark:text-slate-500 shrink-0">
+                  {new Date(ref.createdAt).toLocaleDateString()}
+                </p>
+              </li>
+            ))}
           </ul>
         )}
       </div>

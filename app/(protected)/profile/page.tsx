@@ -35,6 +35,7 @@ export default async function ProfilePage() {
       image: true,
       emailNotifications: true,
       marketingEmails: true,
+      ninVerified: true,
     },
   });
 

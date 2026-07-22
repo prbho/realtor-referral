@@ -10,7 +10,10 @@ import {
   sendReferralNotificationEmail,
 } from "@/lib/email";
 import { checkRateLimit, recordAttempt } from "@/lib/rateLimit";
-import { assertEmailCapacityAvailable } from "@/lib/systemSettings";
+import {
+  assertEmailCapacityAvailable,
+  getSystemSettings,
+} from "@/lib/systemSettings";
 
 export async function POST(request: NextRequest) {
   try {
@@ -29,6 +32,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: "Please enter a valid email address" },
         { status: 400 }
+      );
+    }
+
+    // Check if registration is paused
+    const settings = await getSystemSettings();
+    if (settings.registrationPaused) {
+      return NextResponse.json(
+        {
+          error: "Registration is currently paused.",
+          pauseReason: settings.registrationPauseReason,
+          pauseUntil: settings.registrationPauseUntil?.toISOString() || null,
+        },
+        { status: 503 }
       );
     }
 
