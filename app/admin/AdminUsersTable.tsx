@@ -100,6 +100,20 @@ function formatShortDate(date: string | Date): string {
     .slice(2)}`;
 }
 
+// ─── Helper: full date + time (M/D/YY HH:MM AM/PM) ───────────
+function formatDateTime(date: string | Date): string {
+  const d = typeof date === "string" ? new Date(date) : date;
+  const dateStr = `${d.getMonth() + 1}/${d.getDate()}/${d
+    .getFullYear()
+    .toString()
+    .slice(2)}`;
+  let hours = d.getHours();
+  const minutes = d.getMinutes().toString().padStart(2, "0");
+  const ampm = hours >= 12 ? "PM" : "AM";
+  hours = hours % 12 || 12;
+  return `${dateStr} ${hours}:${minutes} ${ampm}`;
+}
+
 // ─── Summary Card ──────────────────────────────────────────────
 function SummaryCard({
   icon: Icon,
@@ -113,7 +127,7 @@ function SummaryCard({
   value: string;
 }) {
   return (
-    <div className="bg-white dark:bg-slate-800 px-4 py-8 rounded-lg shadow-md transition-colors duration-200">
+    <div className="bg-white border border-[#f7f7f7] dark:bg-slate-800 px-4 py-8 rounded-lg shadow-md transition-colors duration-200">
       <div className="flex items-center gap-3">
         <div
           className={`h-9 w-9 shrink-0 rounded-full flex items-center justify-center ${color}`}
@@ -989,8 +1003,18 @@ export default function AdminUsersTable({
                     <TableCell className="px-4 py-3 text-gray-600 dark:text-gray-300">
                       ₦{user.commission.toFixed(2)}
                     </TableCell>
-                    <TableCell className="px-4 py-3 text-gray-500 dark:text-gray-400">
-                      {formatShortDate(user.createdAt)}
+                    <TableCell className="px-4 py-3">
+                      <div className="flex flex-col leading-tight">
+                        <span className="text-gray-700 dark:text-gray-300">
+                          {formatShortDate(user.createdAt)}
+                        </span>
+                        <span className="text-xs text-gray-400 dark:text-gray-500">
+                          {formatDateTime(user.createdAt)
+                            .split(" ")
+                            .slice(1)
+                            .join(" ")}
+                        </span>
+                      </div>
                     </TableCell>
                     <TableCell className="px-4 py-3 text-right">
                       {!user.isSuperAdmin && user.id !== currentUserId && (
@@ -1172,9 +1196,17 @@ export default function AdminUsersTable({
                     <p className="text-xs text-gray-500 dark:text-gray-400">
                       Joined
                     </p>
-                    <p className="text-gray-500 dark:text-gray-400">
-                      {formatShortDate(user.createdAt)}
-                    </p>
+                    <div className="flex flex-col leading-tight">
+                      <span className="text-gray-600 dark:text-gray-300">
+                        {formatShortDate(user.createdAt)}
+                      </span>
+                      <span className="text-xs text-gray-400 dark:text-gray-500">
+                        {formatDateTime(user.createdAt)
+                          .split(" ")
+                          .slice(1)
+                          .join(" ")}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
