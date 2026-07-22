@@ -7,6 +7,9 @@ import {
   Mail,
   Settings,
   ArrowRight,
+  Lock,
+  User,
+  Clock,
 } from "lucide-react";
 
 interface PlatformStats {
@@ -20,15 +23,31 @@ interface PlatformStats {
   emailsSentToday: number;
 }
 
-interface AdminOverviewProps {
-  stats: PlatformStats;
+interface RegistrationSettings {
+  paused: boolean;
+  reason: string | null;
+  pauseUntil: Date | null;
+  pausedBy: string | null; // admin name
 }
 
-export default function AdminOverview({ stats }: AdminOverviewProps) {
+interface AdminOverviewProps {
+  stats: PlatformStats;
+  registrationSettings?: RegistrationSettings;
+}
+
+export default function AdminOverview({
+  stats,
+  registrationSettings,
+}: AdminOverviewProps) {
   const emailUsagePercent = Math.min(
     (stats.emailsSentToday / stats.emailDailyLimit) * 100,
     100
   );
+
+  const isRegPaused = registrationSettings?.paused ?? false;
+  const regReason = registrationSettings?.reason;
+  const regPauseUntil = registrationSettings?.pauseUntil;
+  const regPausedBy = registrationSettings?.pausedBy;
 
   return (
     <div className="bg-linear-to-br from-slate-900 to-slate-800 dark:from-slate-950 dark:to-slate-900 text-white rounded-2xl shadow-lg p-6 transition-colors duration-200">
@@ -102,8 +121,8 @@ export default function AdminOverview({ stats }: AdminOverviewProps) {
         </div>
       </div>
 
-      {/* Bottom Row: Email Limit + Quick Actions */}
-      <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Bottom Row: Email Limit + Registration Status + Quick Actions */}
+      <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Email Send Limit Card */}
         <div className="bg-white/5 rounded-xl p-4 border border-white/5">
           <div className="flex items-center justify-between">
@@ -141,7 +160,60 @@ export default function AdminOverview({ stats }: AdminOverviewProps) {
           </p>
         </div>
 
-        {/* Quick Actions */}
+        {/* Registration Status Card */}
+        <div className="bg-white/5 rounded-xl p-4 border border-white/5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Lock
+                className={`h-5 w-5 ${
+                  isRegPaused ? "text-red-400" : "text-emerald-400"
+                }`}
+              />
+              <span className="text-sm font-medium text-slate-200">
+                Registration
+              </span>
+              <span
+                className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                  isRegPaused
+                    ? "bg-red-500/20 text-red-400"
+                    : "bg-emerald-500/20 text-emerald-400"
+                }`}
+              >
+                {isRegPaused ? "PAUSED" : "ACTIVE"}
+              </span>
+            </div>
+          </div>
+          {isRegPaused ? (
+            <div className="mt-2 space-y-1">
+              {regReason && (
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  Reason: {regReason}
+                </p>
+              )}
+              {regPausedBy && (
+                <p className="text-xs text-slate-400 flex items-center gap-1">
+                  <User className="h-3 w-3" />
+                  Paused by: {regPausedBy}
+                </p>
+              )}
+              {regPauseUntil && (
+                <p className="text-xs text-slate-400 flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  Resumes at: {new Date(regPauseUntil).toLocaleString()}
+                </p>
+              )}
+              {!regPauseUntil && (
+                <p className="text-xs text-slate-400">No resume time set</p>
+              )}
+            </div>
+          ) : (
+            <p className="text-xs text-slate-400 mt-2">
+              New users can register
+            </p>
+          )}
+        </div>
+
+        {/* Quick Actions Card */}
         <div className="bg-white/5 rounded-xl p-4 border border-white/5 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Settings className="h-5 w-5 text-slate-400" />

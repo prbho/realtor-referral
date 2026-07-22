@@ -70,6 +70,7 @@ const REQUIRED_PROFILE_FIELDS = [
   { key: "nin", label: "NIN" },
 ] as const;
 
+// ─── Main Component ──────────────────────────────────────────
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
   if (!session) redirect("/login");
@@ -117,50 +118,64 @@ export default async function DashboardPage() {
   const sevenDaysAgo = new Date();
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-  const platformStats = isAdmin
-    ? await (async () => {
-        const [
-          totalUsers,
-          totalRealtors,
-          totals,
-          recentUsers,
-          systemSettings,
-          emailsSentToday,
-        ] = await Promise.all([
-          prisma.user.count(),
-          prisma.user.count({ where: { role: "REALTOR" } }),
-          prisma.user.aggregate({
-            _sum: { referralCount: true, commission: true },
-          }),
-          prisma.user.count({
-            where: {
-              createdAt: {
-                gte: sevenDaysAgo,
-              },
-            },
-          }),
-          getSystemSettings(),
-          getEmailsSentToday(),
-        ]);
-
-        return {
-          totalUsers,
-          totalRealtors,
-          totalReferrals: totals._sum.referralCount || 0,
-          totalCommission: totals._sum.commission || 0,
-          newThisWeek: recentUsers,
-          emailLimitEnabled: systemSettings.emailLimitEnabled,
-          emailDailyLimit: systemSettings.emailDailyLimit,
-          emailsSentToday,
-        };
-      })()
-    : null;
-
-  // ─── Fetch NIN verification setting ──────────────────────────
+  // ─── Fetch system settings ──────────────────────────────────
   const systemSettings = await getSystemSettings();
-  const ninVerificationRequired = systemSettings.ninVerificationRequired;
+  const emailsSentToday = await getEmailsSentToday();
+
+  // ─── Admin stats (only for admins) ──────────────────────────
+  let platformStats = null;
+  let registrationSettings = null;
+
+  if (isAdmin) {
+    const [totalUsers, totalRealtors, totals, recentUsers] = await Promise.all([
+      prisma.user.count(),
+      prisma.user.count({ where: { role: "REALTOR" } }),
+      prisma.user.aggregate({
+        _sum: { referralCount: true, commission: true },
+      }),
+      prisma.user.count({
+        where: {
+          createdAt: {
+            gte: sevenDaysAgo,
+          },
+        },
+      }),
+    ]);
+
+    platformStats = {
+      totalUsers,
+      totalRealtors,
+      totalReferrals: totals._sum.referralCount || 0,
+      totalCommission: totals._sum.commission || 0,
+      newThisWeek: recentUsers,
+      emailLimitEnabled: systemSettings.emailLimitEnabled,
+      emailDailyLimit: systemSettings.emailDailyLimit,
+      emailsSentToday,
+    };
+
+    // ─── Build registration settings ──────────────────────────
+    let pausedByAdminName: string | null = null;
+    if (
+      systemSettings.registrationPaused &&
+      systemSettings.registrationPausedBy
+    ) {
+      const admin = await prisma.user.findUnique({
+        where: { id: systemSettings.registrationPausedBy },
+        select: { name: true, email: true },
+      });
+      pausedByAdminName = admin?.name || admin?.email || null;
+    }
+
+    registrationSettings = {
+      paused: systemSettings.registrationPaused,
+      reason: systemSettings.registrationPauseReason,
+      pauseUntil: systemSettings.registrationPauseUntil,
+      pausedBy: pausedByAdminName,
+    };
+  }
 
   const referralLink = `${process.env.NEXTAUTH_URL}/register?ref=${user.referralCode}`;
+  const ninVerificationRequired = systemSettings.ninVerificationRequired;
 
   const today = new Date().toLocaleDateString(undefined, {
     weekday: "long",
@@ -225,8 +240,13 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      {/* ─── Platform Overview ────────────────────────────────── */}
-      {isAdmin && platformStats && <AdminOverview stats={platformStats} />}
+      {/* ─── Platform Overview for admins ────────────────────── */}
+      {isAdmin && platformStats && (
+        <AdminOverview
+          stats={platformStats}
+          registrationSettings={registrationSettings ?? undefined}
+        />
+      )}
 
       {/* ─── Stats & Referral Link ───────────────────────────── */}
       <DashboardStats
@@ -255,22 +275,29 @@ export default async function DashboardPage() {
           </div>
         ) : (
           <ul className="divide-y divide-slate-200 dark:divide-neutral-700">
-            {user.referrals.map((ref) => (
-              <li key={ref.id} className="py-3 flex items-center gap-3">
-                <UserAvatar src={user.image} name={ref.name} size={36} />
-                <div className="min-w-0 flex-1">
-                  <p className="font-medium text-slate-900 dark:text-white truncate">
-                    {ref.name || "Unnamed"}
+            {user.referrals.map(
+              (ref: {
+                id: string;
+                name: string | null;
+                email: string;
+                createdAt: Date;
+              }) => (
+                <li key={ref.id} className="py-3 flex items-center gap-3">
+                  <UserAvatar src={user.image} name={ref.name} size={36} />
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-slate-900 dark:text-white truncate">
+                      {ref.name || "Unnamed"}
+                    </p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 truncate">
+                      {ref.email}
+                    </p>
+                  </div>
+                  <p className="text-xs text-slate-400 dark:text-slate-500 shrink-0">
+                    {new Date(ref.createdAt).toLocaleDateString()}
                   </p>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 truncate">
-                    {ref.email}
-                  </p>
-                </div>
-                <p className="text-xs text-slate-400 dark:text-slate-500 shrink-0">
-                  {new Date(ref.createdAt).toLocaleDateString()}
-                </p>
-              </li>
-            ))}
+                </li>
+              )
+            )}
           </ul>
         )}
       </div>

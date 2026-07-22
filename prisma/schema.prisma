@@ -92,7 +92,9 @@ model SystemSettings {
   ninVerificationRequired Boolean  @default(true)
   registrationPaused      Boolean  @default(false)      
   registrationPauseReason String?  @db.Text            
-  registrationPauseUntil  DateTime?                    
+  registrationPauseUntil  DateTime?  
+  registrationPausedBy   String?  
+  registrationPausedAt   DateTime? 
 }
 
 model EmailLog {

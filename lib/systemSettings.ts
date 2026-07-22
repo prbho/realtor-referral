@@ -9,6 +9,8 @@ export type SystemSettings = {
   registrationPaused: boolean;
   registrationPauseReason: string | null;
   registrationPauseUntil: Date | null;
+  registrationPausedBy: string | null; // admin ID who paused
+  registrationPausedAt: Date | null; // when it was paused
 };
 
 export async function getSystemSettings(): Promise<SystemSettings> {
@@ -23,6 +25,8 @@ export async function getSystemSettings(): Promise<SystemSettings> {
     registrationPaused: settings?.registrationPaused ?? false,
     registrationPauseReason: settings?.registrationPauseReason ?? null,
     registrationPauseUntil: settings?.registrationPauseUntil ?? null,
+    registrationPausedBy: settings?.registrationPausedBy ?? null,
+    registrationPausedAt: settings?.registrationPausedAt ?? null,
   };
 }
 
@@ -33,12 +37,13 @@ export async function updateSystemSettings(data: {
   registrationPaused?: boolean;
   registrationPauseReason?: string | null;
   registrationPauseUntil?: Date | string | null;
+  registrationPausedBy?: string | null;
+  registrationPausedAt?: Date | null; // add this
 }) {
   const current = await prisma.systemSettings.findUnique({
     where: { id: SETTINGS_ID },
   });
 
-  // Helper: if registrationPauseUntil is a string, convert to Date; else keep as is
   const parsePauseUntil = (
     value: Date | string | null | undefined
   ): Date | null => {
@@ -63,6 +68,14 @@ export async function updateSystemSettings(data: {
       data.registrationPauseUntil !== undefined
         ? parsePauseUntil(data.registrationPauseUntil)
         : current?.registrationPauseUntil ?? null,
+    registrationPausedBy:
+      data.registrationPausedBy !== undefined
+        ? data.registrationPausedBy
+        : current?.registrationPausedBy ?? null,
+    registrationPausedAt:
+      data.registrationPausedAt !== undefined
+        ? data.registrationPausedAt
+        : current?.registrationPausedAt ?? null,
   };
 
   return prisma.systemSettings.upsert({
