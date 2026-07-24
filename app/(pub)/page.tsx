@@ -9,9 +9,13 @@ import {
   Clock,
   Shield,
   Sparkles,
+  FileEditIcon,
+  UserPenIcon,
+  Wallet2,
 } from "lucide-react";
 import { authOptions } from "../api/auth/[...nextauth]/route";
 import Image from "next/image";
+import HomeMilestone from "@/components/HomeMilestoneCard";
 
 export const metadata = {
   title: "Welcome | Regal PDC Realtor",
@@ -40,12 +44,11 @@ export default async function HomePage() {
             priority
             className="object-cover"
           />
-          <div className="absolute inset-0 bg-black/60 dark:bg-black/70" />{" "}
-          {/* Overlay */}
+          <div className="absolute inset-0 bg-black/60 dark:bg-black/70" />
         </div>
 
         {/* Content */}
-        <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+        <div className="relative z-10 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             {/* Left Content */}
             <div>
@@ -59,7 +62,7 @@ export default async function HomePage() {
                 className="text-4xl sm:text-5xl lg:text-6xl font-medium text-white leading-[1.1]"
               >
                 Build Your Future in{" "}
-                <span className="italic text-emerald-300 relative">
+                <span className="italic text-sky-300 relative">
                   Real Estate
                   <span className="absolute -bottom-2 left-0 w-full h-1 bg-emerald-200/50 rounded-full" />
                 </span>
@@ -91,17 +94,17 @@ export default async function HomePage() {
               {/* Trust Badges */}
               <div className="mt-8 flex items-center gap-6 text-sm text-white/70">
                 <div className="flex items-center gap-2">
-                  <Shield className="w-4 h-4 text-emerald-300" />
+                  <Shield className="w-4 h-4 text-sky-300" />
                   <span>Secure & Private</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Users className="w-4 h-4 text-emerald-300" />
+                  <Users className="w-4 h-4 text-sky-300" />
                   <span>100+ Active Agents</span>
                 </div>
               </div>
             </div>
 
-            {/* Right Content - Feature Cards (unchanged) */}
+            {/* Right Content - Feature Cards */}
             <div className="grid grid-cols-2 gap-4">
               {[
                 {
@@ -131,7 +134,7 @@ export default async function HomePage() {
               ].map((item, index) => {
                 const colorMap = {
                   emerald:
-                    "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-300",
+                    "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/80 dark:text-sky-300",
                   blue: "bg-blue-100 text-blue-700 dark:bg-blue-950/80 dark:text-blue-300",
                   purple:
                     "bg-purple-100 text-purple-700 dark:bg-purple-950/80 dark:text-purple-300",
@@ -165,9 +168,9 @@ export default async function HomePage() {
       </section>
 
       {/* ─── How It Works ──────────────────────────────────────────── */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-3xl mx-auto mb-16">
-          <p className="text-sm font-semibold tracking-widest text-emerald-700 uppercase mb-4 dark:text-emerald-400">
+          <p className="text-sm font-semibold tracking-widest text-sky-700 uppercase mb-4 dark:text-sky-400">
             Simple Process
           </p>
           <h2
@@ -175,7 +178,7 @@ export default async function HomePage() {
             className="text-3xl md:text-4xl font-medium text-slate-900 dark:text-white"
           >
             Get Started in{" "}
-            <span className="italic text-emerald-700 dark:text-emerald-500">
+            <span className="italic text-sky-700 dark:text-sky-500">
               3 Easy Steps
             </span>
           </h2>
@@ -188,51 +191,63 @@ export default async function HomePage() {
               title: "Create Your Account",
               description:
                 "Sign up in just 2 minutes with your basic information.",
-              icon: "📝",
+              icon: FileEditIcon,
             },
             {
               step: "02",
               title: "Complete Your Profile",
               description:
                 "Add your details and get your unique referral link.",
-              icon: "👤",
+              icon: UserPenIcon,
             },
             {
               step: "03",
               title: "Start Earning",
               description:
                 "Share your link and earn from successful referrals.",
-              icon: "💰",
+              icon: Wallet2,
             },
-          ].map((item, index) => (
-            <div
-              key={index}
-              className="bg-white dark:bg-[#161b22] rounded-xl border border-slate-200 dark:border-slate-700/50 p-8 hover:shadow-md transition-shadow"
-            >
-              <span className="text-4xl font-bold text-emerald-600/20 font-serif block mb-4 dark:text-emerald-400/20">
-                {item.step}
-              </span>
-              <div className="text-3xl mb-4">{item.icon}</div>
-              <h3
-                style={{ fontFamily: "var(--font-fraunces)" }}
-                className="text-xl font-medium text-slate-900 mb-2 dark:text-white"
+          ].map((item, index) => {
+            const Icon = item.icon;
+            return (
+              <div
+                key={index}
+                className="bg-white dark:bg-[#161b22] rounded-xl border border-slate-200 dark:border-slate-700/50 p-8 hover:shadow-md transition-shadow"
               >
-                {item.title}
-              </h3>
-              <p className="text-slate-600 dark:text-slate-400">
-                {item.description}
-              </p>
-            </div>
-          ))}
+                <span className="text-4xl font-bold text-emerald-600/20 font-serif block mb-4 dark:text-emerald-400/20">
+                  {item.step}
+                </span>
+                <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-100 text-sky-700 dark:bg-sky-950/60 dark:text-sky-300">
+                  <Icon className="h-6 w-6" />
+                </div>
+                <h3
+                  style={{ fontFamily: "var(--font-fraunces)" }}
+                  className="text-xl font-medium text-slate-900 mb-2 dark:text-white"
+                >
+                  {item.title}
+                </h3>
+                <p className="text-slate-600 dark:text-slate-400">
+                  {item.description}
+                </p>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* ─── Recruitment Milestones & Benefits ────────────────────── */}
+      <section className="bg-linear-to-br from-slate-900 to-slate-800 dark:from-slate-950 dark:to-slate-900">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <HomeMilestone />
         </div>
       </section>
 
       {/* ─── Testimonial ──────────────────────────────────────────── */}
-      <section className="bg-stone-300 dark:bg-accent py-16 relative overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="relative overflow-hidden">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div>
-              <p className="text-sm font-semibold tracking-widest text-emerald-700 uppercase mb-4 dark:text-emerald-400">
+              <p className="text-sm font-semibold tracking-widest text-sky-700 uppercase mb-4 dark:text-emerald-400">
                 Why Join Us
               </p>
               <h2
@@ -240,7 +255,7 @@ export default async function HomePage() {
                 className="text-3xl md:text-4xl font-medium text-slate-900 mb-6 dark:text-white"
               >
                 More Than Just a{" "}
-                <span className="italic text-emerald-700 dark:text-emerald-500">
+                <span className="italic text-sky-700 dark:text-sky-500">
                   Career
                 </span>
               </h2>
@@ -267,7 +282,7 @@ export default async function HomePage() {
                 ))}
               </ul>
             </div>
-            <div className="bg-[#0b3264] rounded-2xl p-8 text-white relative dark:bg-linear-to-br dark:from-[#0b3264] dark:to-slate-800">
+            <div className="bg-sky-300 rounded-2xl p-8 text-slate-900 relative dark:bg-linear-to-br dark:from-[#0b3264] dark:to-slate-800">
               <blockquote>
                 <p className="text-xl leading-relaxed font-light">
                   &quot;Joining Regal PDC was the best career decision I&apos;ve
@@ -276,7 +291,7 @@ export default async function HomePage() {
                 </p>
                 <footer className="mt-6">
                   <div className="font-semibold">Sarah Johnson</div>
-                  <div className="text-sm text-emerald-300 dark:text-emerald-400">
+                  <div className="text-sm text-slate-900 dark:text-slate-950">
                     Top Performer, May 2026
                   </div>
                 </footer>
@@ -288,7 +303,7 @@ export default async function HomePage() {
 
       {/* ─── Final CTA ────────────────────────────────────────────── */}
       <section className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-linear-to-br from-[#0b3264] to-slate-800 rounded-2xl p-12 text-white text-center dark:from-[#0b3264] dark:to-slate-900">
+        <div className="bg-linear-to-br from-slate-900 to-slate-800 dark:from-slate-950 dark:to-slate-900 rounded-2xl p-12 text-white text-center">
           <h2
             style={{ fontFamily: "var(--font-fraunces)" }}
             className="text-3xl md:text-4xl font-medium mb-4"

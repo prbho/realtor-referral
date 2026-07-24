@@ -1,17 +1,16 @@
-import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
-import { authOptions } from "../api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
 import AdminUsersTable from "./AdminUsersTable";
+import { getCurrentUser, isAdmin } from "@/lib/currentUser";
 
 export default async function AdminPage() {
-  const session = await getServerSession(authOptions);
+  const currentUser = await getCurrentUser();
 
-  if (!session) {
+  if (!currentUser) {
     redirect("/login");
   }
 
-  if (session.user.role !== "ADMIN") {
+  if (!isAdmin(currentUser)) {
     redirect("/dashboard");
   }
 
@@ -71,7 +70,7 @@ export default async function AdminPage() {
   return (
     <AdminUsersTable
       users={JSON.parse(JSON.stringify(transformedUsers))}
-      currentUserId={session.user.id}
+      currentUserId={currentUser.id}
     />
   );
 }

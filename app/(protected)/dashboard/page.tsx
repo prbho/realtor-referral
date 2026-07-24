@@ -5,10 +5,12 @@ import { prisma } from "@/lib/prisma";
 import { getSystemSettings, getEmailsSentToday } from "@/lib/systemSettings";
 import Greeting from "@/components/Greeting";
 import Link from "next/link";
-import { UserRoundArrowLeft, AlertCircle, Zap } from "lucide-react";
+import { UserRoundArrowLeft, AlertCircle, Zap, Share2 } from "lucide-react";
 import Image from "next/image";
 import AdminOverview from "@/components/AdminOverview";
 import DashboardStats from "@/components/DashboardStats";
+import Recruitment from "@/components/Recruitment";
+import ShareButton from "@/components/ShareButton";
 
 export const metadata = {
   title: "Dashboard | Regal PDC Realtor",
@@ -176,6 +178,7 @@ export default async function DashboardPage() {
 
   const referralLink = `${process.env.NEXTAUTH_URL}/register?ref=${user.referralCode}`;
   const ninVerificationRequired = systemSettings.ninVerificationRequired;
+  const isVerified = ninVerificationRequired ? user.ninVerified : true;
 
   const today = new Date().toLocaleDateString(undefined, {
     weekday: "long",
@@ -185,7 +188,7 @@ export default async function DashboardPage() {
   });
 
   return (
-    <div className="p-6 md:p-8 space-y-8 relative">
+    <div className="p-6 md:p-0 space-y-8 relative">
       <div className="absolute inset-0 -z-10 bg-linear-to-b from-blue-50/30 to-white dark:from-slate-900/50 dark:to-slate-900" />
 
       {/* ─── Header ─────────────────────────────────────────────── */}
@@ -254,52 +257,68 @@ export default async function DashboardPage() {
         referralLink={referralLink}
         ninVerificationRequired={ninVerificationRequired}
       />
+      <div className="flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-px-3 px-3 pb-2 md:grid md:grid-cols-5 md:gap-6 md:overflow-visible md:px-0 md:pb-0">
+        {/* ─── Referrals List ────────────────────────────────────── */}
+        <div className="col-span-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-6 transition-colors duration-200">
+          <div className="flex items-center gap-2 mb-4">
+            <UserRoundArrowLeft className="h-5 w-5 text-violet-600 dark:text-violet-400" />
+            <h2 className="font-semibold text-lg text-slate-900 dark:text-white">
+              Your Referrals
+            </h2>
+          </div>
 
-      {/* ─── Referrals List ────────────────────────────────────── */}
-      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-6 transition-colors duration-200">
-        <div className="flex items-center gap-2 mb-4">
-          <UserRoundArrowLeft className="h-5 w-5 text-violet-600 dark:text-violet-400" />
-          <h2 className="font-semibold text-lg text-slate-900 dark:text-white">
-            Your Referrals
-          </h2>
+          {user.referrals.length === 0 ? (
+            <div className="bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-700 rounded-2xl p-8 text-center">
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-sky-100 text-sky-700 dark:bg-sky-900/50 dark:text-sky-300">
+                <Share2 className="h-6 w-6" />
+              </div>
+              <p className="text-base font-semibold text-slate-900 dark:text-white">
+                You haven&apos;t referred anyone yet.
+              </p>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">
+                {isVerified
+                  ? "Share your referral link above to get started."
+                  : "Verify your NIN to access your referral link and code."}
+              </p>
+              {isVerified ? (
+                <div className="mt-6 flex justify-center">
+                  <ShareButton url={referralLink} />
+                </div>
+              ) : null}
+            </div>
+          ) : (
+            <ul className="divide-y divide-slate-200 dark:divide-neutral-700">
+              {user.referrals.map(
+                (ref: {
+                  id: string;
+                  name: string | null;
+                  email: string;
+                  createdAt: Date;
+                }) => (
+                  <li key={ref.id} className="py-3 flex items-center gap-3">
+                    <UserAvatar src={user.image} name={ref.name} size={36} />
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-slate-900 dark:text-white truncate">
+                        {ref.name || "Unnamed"}
+                      </p>
+                      <p className="text-sm text-slate-500 dark:text-slate-400 truncate">
+                        {ref.email}
+                      </p>
+                    </div>
+                    <p className="text-xs text-slate-400 dark:text-slate-500 shrink-0">
+                      {new Date(ref.createdAt).toLocaleDateString()}
+                    </p>
+                  </li>
+                )
+              )}
+            </ul>
+          )}
         </div>
 
-        {user.referrals.length === 0 ? (
-          <div className="text-center py-8">
-            <p className="text-slate-500 dark:text-slate-400 text-sm">
-              You haven&apos;t referred anyone yet.
-            </p>
-            <p className="text-slate-400 dark:text-slate-500 text-xs mt-1">
-              Share your referral link above to get started.
-            </p>
-          </div>
-        ) : (
-          <ul className="divide-y divide-slate-200 dark:divide-neutral-700">
-            {user.referrals.map(
-              (ref: {
-                id: string;
-                name: string | null;
-                email: string;
-                createdAt: Date;
-              }) => (
-                <li key={ref.id} className="py-3 flex items-center gap-3">
-                  <UserAvatar src={user.image} name={ref.name} size={36} />
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium text-slate-900 dark:text-white truncate">
-                      {ref.name || "Unnamed"}
-                    </p>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 truncate">
-                      {ref.email}
-                    </p>
-                  </div>
-                  <p className="text-xs text-slate-400 dark:text-slate-500 shrink-0">
-                    {new Date(ref.createdAt).toLocaleDateString()}
-                  </p>
-                </li>
-              )
-            )}
-          </ul>
-        )}
+        {/* ─── Recruitment Milestone ──────────────────────────── */}
+        <div className="col-span-2">
+          <Recruitment />
+        </div>
       </div>
     </div>
   );

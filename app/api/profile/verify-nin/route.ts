@@ -48,9 +48,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log(`[NIN Verification] Calling Monnify for NIN: ${cleanNin}`);
     const result = await verifyNin(cleanNin);
-    console.log("[NIN Verification] Monnify result:", result);
 
     if (!result.verified) {
       const errorMsg =

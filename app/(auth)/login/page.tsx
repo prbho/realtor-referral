@@ -1,17 +1,16 @@
 // app/login/page.tsx
-import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import LoginForm from "@/components/LoginForm";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { getCurrentUser } from "@/lib/currentUser";
 
 export const metadata = {
   title: "Sign In | Regal PDC Realtor",
 };
 
 export default async function LoginPage() {
-  const session = await getServerSession(authOptions);
+  const user = await getCurrentUser();
 
-  if (session) {
+  if (user) {
     redirect("/dashboard");
   }
 

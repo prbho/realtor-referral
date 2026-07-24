@@ -1,47 +1,16 @@
-// app/admin/page.tsx
-import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
-import { prisma } from "@/lib/prisma";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import AdminUsersTable from "../AdminUsersTable";
+import { getCurrentUser, isAdmin } from "@/lib/currentUser";
 
-export default async function AdminPage() {
-  const session = await getServerSession(authOptions);
+export default async function AdminUsersPage() {
+  const currentUser = await getCurrentUser();
 
-  if (!session) {
+  if (!currentUser) {
     redirect("/login");
   }
 
-  if (session.user.role !== "ADMIN") {
+  if (!isAdmin(currentUser)) {
     redirect("/dashboard");
   }
 
-  const users = await prisma.user.findMany({
-    orderBy: { createdAt: "desc" },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      role: true,
-      referralCode: true,
-      referralCount: true,
-      commission: true,
-      createdAt: true,
-      referrals: {
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          role: true,
-          createdAt: true,
-        },
-        orderBy: { createdAt: "desc" },
-      },
-    },
-  });
-
-  <AdminUsersTable
-    users={JSON.parse(JSON.stringify(users))}
-    currentUserId={session.user.id}
-  />;
+  redirect("/admin");
 }

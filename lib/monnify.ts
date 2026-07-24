@@ -42,7 +42,6 @@ export async function verifyNin(
 ): Promise<{ verified: boolean; fullName?: string; error?: string }> {
   try {
     const token = await getMonnifyToken();
-    console.log(`[Monnify] Verifying NIN: ${nin}`);
     const response = await fetch(`${MONNIFY_BASE_URL}/api/v1/vas/nin-details`, {
       method: "POST",
       headers: {
@@ -53,8 +52,6 @@ export async function verifyNin(
     });
 
     const data = await response.json();
-    console.log("[Monnify] Response:", JSON.stringify(data, null, 2));
-
     if (!response.ok) {
       return {
         verified: false,
@@ -85,7 +82,7 @@ export async function verifyNin(
       [body.firstName, body.lastName].filter(Boolean).join(" ") || undefined;
     return { verified: true, fullName };
   } catch (error) {
-    console.error("[Monnify] Error:", error);
+    console.error("Monnify NIN verification failed", error);
     return {
       verified: false,
       error: "Service unavailable. Please try again later.",

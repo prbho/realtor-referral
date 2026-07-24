@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Users, Wallet, Link2Icon, Lock } from "lucide-react";
 import StatCard from "@/components/StatCard";
 import CopyButton from "@/components/CopyButton";
+import ShareButton from "@/components/ShareButton";
 import NINVerificationModal from "@/components/NINVerificationModal";
 
 interface DashboardStatsProps {
@@ -104,11 +105,14 @@ export default function DashboardStats({
               readOnly
               className="flex-1 w-full p-2.5 border rounded-md text-sm bg-gray-50 dark:bg-neutral-700 dark:border-neutral-600 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors duration-200"
             />
-            <CopyButton text={referralLink} />
+            <div className="flex flex-wrap gap-2">
+              <CopyButton text={referralLink} />
+              <ShareButton url={referralLink} />
+            </div>
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
-            Share this link with friends and earn commissions on their
-            referrals.
+            Invite friends to join Regal PDC and let them discover a rewarding
+            real estate career.
           </p>
         </div>
       ) : (

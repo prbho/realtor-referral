@@ -1,18 +1,17 @@
-import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
-import { authOptions } from "../../api/auth/[...nextauth]/route";
 import { getSystemSettings, getEmailsSentToday } from "@/lib/systemSettings";
 import SystemSettingsForm from "@/components/SystemSettingsForm";
+import { getCurrentUser, isAdmin } from "@/lib/currentUser";
 
 export default async function AdminSettingsPage() {
-  const session = await getServerSession(authOptions);
+  const currentUser = await getCurrentUser();
 
-  if (!session) {
+  if (!currentUser) {
     redirect("/login");
   }
 
   // Only admins can access – super admins have role "ADMIN" as well
-  if (session.user.role !== "ADMIN") {
+  if (!isAdmin(currentUser)) {
     redirect("/dashboard");
   }
 

@@ -57,14 +57,6 @@ export const metadata: Metadata = {
     locale: "en_US",
     type: "website",
 
-    images: [
-      {
-        url: "/og-image.jpg",
-        width: 1200,
-        height: 630,
-        alt: "Regal PDC Realtor",
-      },
-    ],
   },
 
   twitter: {
@@ -72,7 +64,6 @@ export const metadata: Metadata = {
     title: "Regal PDC Realtor",
     description: "Nigeria's modern real estate agent referral platform.",
 
-    images: ["/og-image.jpg"],
   },
 
   alternates: {

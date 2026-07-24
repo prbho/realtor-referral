@@ -32,7 +32,6 @@ function UserAvatar({
         width={size}
         height={size}
         className="inline-block rounded-full object-cover shrink-0 aspect-square"
-        unoptimized
       />
     );
   }
@@ -92,6 +91,12 @@ export default function Header() {
                 onClick={() => setIsOpen((prev) => !prev)}
                 className="h-9 w-9 rounded-full overflow-hidden bg-[#0b3264] dark:bg-slate-700 text-white flex items-center justify-center text-sm font-semibold hover:ring-2 hover:ring-offset-1 hover:ring-blue-500 transition-all duration-200 focus:outline-none"
                 aria-label="User menu"
+                aria-expanded={isOpen}
+                onKeyDown={(event) => {
+                  if (event.key === "Escape") {
+                    setIsOpen(false);
+                  }
+                }}
               >
                 <UserAvatar
                   src={session.user.image ?? null}

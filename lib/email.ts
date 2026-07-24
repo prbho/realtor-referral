@@ -19,15 +19,12 @@ export async function sendVerificationEmail(email: string, token: string) {
   });
 
   if (error) {
-    console.error("Resend failed to send verification email:", {
-      to: email,
-      error,
-    });
+    console.error("Resend failed to send verification email", error);
     throw new Error(`Failed to send verification email: ${error.message}`);
   }
 
   await recordEmailSent();
-  console.log("Verification email sent:", { to: email, id: data?.id });
+  console.log("Verification email sent", { id: data?.id });
   return data;
 }
 
@@ -46,15 +43,12 @@ export async function sendPasswordResetEmail(email: string, token: string) {
   });
 
   if (error) {
-    console.error("Resend failed to send password reset email:", {
-      to: email,
-      error,
-    });
+    console.error("Resend failed to send password reset email", error);
     throw new Error(`Failed to send password reset email: ${error.message}`);
   }
 
   await recordEmailSent();
-  console.log("Password reset email sent:", { to: email, id: data?.id });
+  console.log("Password reset email sent", { id: data?.id });
   return data;
 }
 
@@ -73,15 +67,12 @@ export async function sendReferralNotificationEmail(
   });
 
   if (error) {
-    console.error("Resend failed to send referral notification email:", {
-      to: email,
-      error,
-    });
+    console.error("Resend failed to send referral notification email", error);
     // Don't throw — a failed notification shouldn't fail the registration itself
     return null;
   }
 
   await recordEmailSent();
-  console.log("Referral notification email sent:", { to: email, id: data?.id });
+  console.log("Referral notification email sent", { id: data?.id });
   return data;
 }

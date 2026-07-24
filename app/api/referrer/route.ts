@@ -1,10 +1,9 @@
-// app/api/referrer/route.ts
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit, recordAttempt } from "@/lib/rateLimit";
 
-export async function GET(request) {
-  const code = request.nextUrl.searchParams.get("code");
+export async function GET(request: NextRequest) {
+  const code = request.nextUrl.searchParams.get("code")?.trim().toUpperCase();
 
   if (!code) {
     return NextResponse.json(
@@ -23,7 +22,7 @@ export async function GET(request) {
   }
   await recordAttempt(`referrer-lookup:${ip}`);
 
-  const referrer = await prisma.user.findFirst({
+  const referrer = await prisma.user.findUnique({
     where: { referralCode: code },
     select: { name: true },
   });
@@ -35,7 +34,5 @@ export async function GET(request) {
     );
   }
 
-  // Only ever expose the name — never email, id, or any other field here,
-  // since this endpoint is unauthenticated and reachable by anyone with a code.
   return NextResponse.json({ name: referrer.name });
 }

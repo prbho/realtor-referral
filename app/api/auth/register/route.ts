@@ -1,4 +1,3 @@
-// app/api/auth/register/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { generateReferralCode } from "@/lib/utils";
@@ -6,8 +5,8 @@ import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { isValidEmail, isValidPassword } from "@/lib/validation";
 import {
-  sendVerificationEmail,
   sendReferralNotificationEmail,
+  sendVerificationEmail,
 } from "@/lib/email";
 import { checkRateLimit, recordAttempt } from "@/lib/rateLimit";
 import {
@@ -18,7 +17,7 @@ import {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { name, email: rawEmail, password, role, referralCode } = body;
+    const { name, email: rawEmail, password, referralCode } = body;
     const email = rawEmail?.trim().toLowerCase();
 
     if (!name || !email || !password) {
@@ -35,9 +34,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if registration is paused
     const settings = await getSystemSettings();
-    if (settings.registrationPaused) {
+    const registrationPaused =
+      settings.registrationPaused &&
+      (!settings.registrationPauseUntil ||
+        settings.registrationPauseUntil > new Date());
+
+    if (registrationPaused) {
       return NextResponse.json(
         {
           error: "Registration is currently paused.",
@@ -56,8 +59,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check email sending capacity BEFORE creating the account — an account
-    // that can't get a verification email is a dead end for the user.
     try {
       await assertEmailCapacityAvailable();
     } catch (capacityError) {
@@ -92,49 +93,74 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    let referredBy = null;
-    if (referralCode) {
-      const referrer = await prisma.user.findFirst({ where: { referralCode } });
-      if (referrer) {
-        referredBy = referrer.id;
-        await prisma.user.update({
-          where: { id: referrer.id },
-          data: { referralCount: { increment: 1 } },
-        });
-
-        // Notify the referrer, respecting their notification preference.
-        // This doesn't re-check email capacity — if it fails silently due to
-        // limits, that's acceptable since it's not blocking, unlike verification.
-        if (referrer.emailNotifications) {
-          await sendReferralNotificationEmail(referrer.email, name);
-        }
-      }
-    }
+    const normalizedReferralCode =
+      typeof referralCode === "string"
+        ? referralCode.trim().toUpperCase()
+        : null;
+    const referrer = normalizedReferralCode
+      ? await prisma.user.findUnique({
+          where: { referralCode: normalizedReferralCode },
+          select: {
+            id: true,
+            email: true,
+            emailNotifications: true,
+          },
+        })
+      : null;
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const userReferralCode = generateReferralCode(name);
-
-    await prisma.user.create({
-      data: {
-        name,
-        email,
-        password: hashedPassword,
-        role: role || "USER",
-        referralCode: userReferralCode,
-        referredBy,
-      },
-    });
-
     const token = crypto.randomBytes(32).toString("hex");
-    await prisma.verificationToken.create({
-      data: {
-        identifier: email,
-        token,
-        expires: new Date(Date.now() + 24 * 60 * 60 * 1000),
-      },
+
+    await prisma.$transaction(async (transaction) => {
+      await transaction.user.create({
+        data: {
+          name,
+          email,
+          password: hashedPassword,
+          role: "USER",
+          referralCode: userReferralCode,
+          referredBy: referrer?.id ?? null,
+        },
+      });
+
+      if (referrer) {
+        await transaction.user.update({
+          where: { id: referrer.id },
+          data: { referralCount: { increment: 1 } },
+        });
+      }
+
+      await transaction.verificationToken.create({
+        data: {
+          identifier: email,
+          token,
+          expires: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        },
+      });
     });
 
-    await sendVerificationEmail(email, token);
+    if (referrer?.emailNotifications) {
+      void sendReferralNotificationEmail(referrer.email, name).catch(
+        (error) => {
+          console.error("Referral notification email failed", error);
+        }
+      );
+    }
+
+    try {
+      await sendVerificationEmail(email, token);
+    } catch (error) {
+      console.error("Verification email failed after registration", error);
+      return NextResponse.json(
+        {
+          success: true,
+          message:
+            "Account created, but we could not send the verification email. Please use the resend verification option.",
+        },
+        { status: 201 }
+      );
+    }
 
     return NextResponse.json(
       {
@@ -147,10 +173,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("Registration error:", error);
     return NextResponse.json(
-      {
-        error: "Registration failed",
-        details: error instanceof Error ? error.message : "Unknown error",
-      },
+      { error: "Registration failed" },
       { status: 500 }
     );
   }

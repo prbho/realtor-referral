@@ -4,8 +4,13 @@ import { getSystemSettings } from "@/lib/systemSettings";
 export async function GET() {
   try {
     const settings = await getSystemSettings();
+    const paused =
+      settings.registrationPaused &&
+      (!settings.registrationPauseUntil ||
+        settings.registrationPauseUntil > new Date());
+
     return NextResponse.json({
-      paused: settings.registrationPaused,
+      paused,
       reason: settings.registrationPauseReason,
       pauseUntil: settings.registrationPauseUntil?.toISOString() || null,
     });
