@@ -11,6 +11,10 @@ export default function Recruitment() {
         <p className="text-sm text-slate-400 mt-0.5">
           Unlock exclusive rewards and milestone-based benefits
         </p>
+        <p className="mt-3 text-sm font-medium text-sky-300">
+          Share your referral link and start earning higher rewards as your team
+          grows.
+        </p>
       </div>
       <div className="mt-8 space-y-4">
         <MilestoneCard

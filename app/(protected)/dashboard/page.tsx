@@ -257,7 +257,7 @@ export default async function DashboardPage() {
         referralLink={referralLink}
         ninVerificationRequired={ninVerificationRequired}
       />
-      <div className="flex flex-col-reverse md:flex-row gap-4 overflow-x-auto px-0 md:px-3 pb-2 md:grid md:grid-cols-5 md:gap-6 md:overflow-visible">
+      <div className="flex flex-col-reverse md:flex-row gap-4 overflow-x-auto px-0 pb-2 md:grid md:grid-cols-5 md:gap-6 md:overflow-visible">
         {/* ─── Referrals List ────────────────────────────────────── */}
         <div className="col-span-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-6 transition-colors duration-200">
           <div className="flex items-center gap-2 mb-4">

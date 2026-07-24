@@ -3,10 +3,10 @@
 
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useState,
-  useCallback,
 } from "react";
 
 type Theme = "light" | "dark" | "system";
@@ -20,8 +20,25 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>("system");
-  const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">("light");
+  const [theme, setThemeState] = useState<Theme>(() => {
+    if (typeof window === "undefined") return "system";
+    return (localStorage.getItem("theme") as Theme) || "system";
+  });
+
+  const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">(() => {
+    if (typeof window === "undefined") {
+      return "light";
+    }
+
+    const initialTheme = (localStorage.getItem("theme") as Theme) || "system";
+    if (initialTheme === "system") {
+      return window.matchMedia("(prefers-color-scheme: dark)").matches
+        ? "dark"
+        : "light";
+    }
+
+    return initialTheme;
+  });
 
   const applyTheme = useCallback((themeChoice: Theme) => {
     if (typeof window === "undefined") return;
@@ -40,20 +57,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-
-    const savedTheme = localStorage.getItem("theme") as Theme | null;
-    const initialTheme = savedTheme || "system";
-    const resolved =
-      initialTheme === "system"
-        ? window.matchMedia("(prefers-color-scheme: dark)").matches
-          ? "dark"
-          : "light"
-        : initialTheme;
-
-    setThemeState(initialTheme);
-    setResolvedTheme(resolved);
-    applyTheme(initialTheme);
-  }, [applyTheme]);
+    applyTheme(theme);
+  }, [applyTheme, theme]);
 
   // Listen for system theme changes
   useEffect(() => {
@@ -79,7 +84,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   const setTheme = (newTheme: Theme) => {
     setThemeState(newTheme);
-    localStorage.setItem("theme", newTheme);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("theme", newTheme);
+    }
     applyTheme(newTheme);
   };
 
