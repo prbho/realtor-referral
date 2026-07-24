@@ -188,7 +188,7 @@ export default async function DashboardPage() {
   });
 
   return (
-    <div className="p-6 md:p-0 space-y-8 relative">
+    <div className="space-y-8 relative">
       <div className="absolute inset-0 -z-10 bg-linear-to-b from-blue-50/30 to-white dark:from-slate-900/50 dark:to-slate-900" />
 
       {/* ─── Header ─────────────────────────────────────────────── */}
@@ -257,7 +257,7 @@ export default async function DashboardPage() {
         referralLink={referralLink}
         ninVerificationRequired={ninVerificationRequired}
       />
-      <div className="flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-px-3 px-3 pb-2 md:grid md:grid-cols-5 md:gap-6 md:overflow-visible md:px-0 md:pb-0">
+      <div className="flex flex-col-reverse md:flex-row gap-4 overflow-x-auto px-0 md:px-3 pb-2 md:grid md:grid-cols-5 md:gap-6 md:overflow-visible">
         {/* ─── Referrals List ────────────────────────────────────── */}
         <div className="col-span-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-6 transition-colors duration-200">
           <div className="flex items-center gap-2 mb-4">
