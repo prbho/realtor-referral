@@ -31,9 +31,9 @@ export default async function HomePage() {
   }
 
   return (
-    <div className="space-y-24">
+    <div>
       {/* ─── Hero Section ─────────────────────────────────────────── */}
-      <section className="relative min-h-screen flex items-center overflow-hidden">
+      <section className="relative flex items-center overflow-hidden py-16 lg:py-20">
         {/* Background Image */}
         <div className="absolute inset-0 z-0">
           <Image
@@ -48,7 +48,7 @@ export default async function HomePage() {
         </div>
 
         {/* Content */}
-        <div className="relative z-10 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+        <div className="relative z-10 w-full max-w-6xl mx-auto px-4 py-4 sm:py-20 sm:px-6">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             {/* Left Content */}
             <div>
@@ -168,7 +168,7 @@ export default async function HomePage() {
       </section>
 
       {/* ─── How It Works ──────────────────────────────────────────── */}
-      <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-20">
         <div className="text-center max-w-3xl mx-auto mb-16">
           <p className="text-sm font-semibold tracking-widest text-sky-700 uppercase mb-4 dark:text-sky-400">
             Simple Process
@@ -236,30 +236,30 @@ export default async function HomePage() {
       </section>
 
       {/* ─── Recruitment Milestones & Benefits ────────────────────── */}
-      <section className="bg-linear-to-br from-slate-900 to-slate-800 dark:from-slate-950 dark:to-slate-900">
+      <section className="bg-linear-to-br from-slate-900 to-slate-800 dark:from-slate-950 dark:to-slate-900 py-16 lg:py-20">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <HomeMilestone />
         </div>
       </section>
 
       {/* ─── Testimonial ──────────────────────────────────────────── */}
-      <section className="relative overflow-hidden">
+      <section className="relative overflow-hidden py-16 lg:py-20">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div>
-              <p className="text-sm font-semibold tracking-widest text-sky-700 uppercase mb-4 dark:text-emerald-400">
+              <p className="text-sm text-center sm:text-left font-semibold tracking-widest text-sky-700 uppercase mb-4 dark:text-emerald-400">
                 Why Join Us
               </p>
               <h2
                 style={{ fontFamily: "var(--font-fraunces)" }}
-                className="text-3xl md:text-4xl font-medium text-slate-900 mb-6 dark:text-white"
+                className="text-3xl md:text-4xl text-center sm:text-left font-medium text-slate-900 mb-6 dark:text-white"
               >
                 More Than Just a{" "}
                 <span className="italic text-sky-700 dark:text-sky-500">
                   Career
                 </span>
               </h2>
-              <p className="text-lg text-slate-600 mb-6 leading-relaxed dark:text-slate-300">
+              <p className="text-lg text-center sm:text-left text-slate-600 mb-6 leading-relaxed dark:text-slate-300">
                 As a member of our network, you get access to exclusive
                 training, marketing materials, and a community of like-minded
                 professionals who support each other&apos;s growth.
@@ -302,7 +302,7 @@ export default async function HomePage() {
       </section>
 
       {/* ─── Final CTA ────────────────────────────────────────────── */}
-      <section className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="max-w-4xl mx-auto mb-8 px-4 sm:px-6 lg:px-8">
         <div className="bg-linear-to-br from-slate-900 to-slate-800 dark:from-slate-950 dark:to-slate-900 rounded-2xl p-12 text-white text-center">
           <h2
             style={{ fontFamily: "var(--font-fraunces)" }}

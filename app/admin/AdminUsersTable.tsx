@@ -749,7 +749,11 @@ export default function AdminUsersTable({
   return (
     <>
       {/* Main content */}
-      <div className={`mt-10 mb-16 ${isDeleting ? "pointer-events-none" : ""}`}>
+      <div
+        className={`mt-10 mb-16 px-4 sm:px-0 ${
+          isDeleting ? "pointer-events-none" : ""
+        }`}
+      >
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold text-neutral-800 dark:text-white transition-colors duration-200">
             Admin — Users

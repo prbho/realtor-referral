@@ -3,7 +3,7 @@ import { Users, TrendingUp, Crown } from "lucide-react";
 
 export default function HomeMilestone() {
   return (
-    <div className="text-white px-4 sm:px-6 lg:px-8 lg:py-20 transition-colors duration-200">
+    <div className="text-white">
       {/* Header */}
       <div className="text-center max-w-3xl mx-auto mb-10">
         <p className="text-sm font-semibold uppercase tracking-widest text-slate-400 mb-3">

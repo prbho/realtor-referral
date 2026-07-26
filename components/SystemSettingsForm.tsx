@@ -96,16 +96,20 @@ export default function SystemSettingsForm({
 
   // ─── Tabs configuration ──────────────────────────────────────
   const tabs: { id: TabId; label: string; icon: React.ReactNode }[] = [
-    { id: "email", label: "Email Limits", icon: <Mail className="h-4 w-4" /> },
+    {
+      id: "email",
+      label: "Email Limits",
+      icon: <Mail className="h-4 w-4 mx-auto sm:mx-0" />,
+    },
     {
       id: "nin",
       label: "NIN Verification",
-      icon: <Shield className="h-4 w-4" />,
+      icon: <Shield className="h-4 w-4 mx-auto sm:mx-0" />,
     },
     {
       id: "registration",
       label: "Registration",
-      icon: <Lock className="h-4 w-4" />,
+      icon: <Lock className="h-4 w-4 mx-auto sm:mx-0" />,
     },
   ];
 
@@ -143,7 +147,7 @@ export default function SystemSettingsForm({
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={`
-                    flex items-center gap-2 px-4 py-3 text-sm font-medium rounded-t-lg transition-all duration-200 whitespace-nowrap
+                    flex items-center flex-1 gap-2 px-4 py-3 text-sm font-medium rounded-t-lg transition-all duration-200 whitespace-nowrap
                     ${
                       isActive
                         ? "text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400 bg-blue-50/50 dark:bg-blue-950/20"
@@ -152,7 +156,7 @@ export default function SystemSettingsForm({
                   `}
                 >
                   {tab.icon}
-                  {tab.label}
+                  <span className="hidden sm:inline">{tab.label}</span>
                 </button>
               );
             })}
