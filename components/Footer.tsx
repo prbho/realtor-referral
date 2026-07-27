@@ -19,6 +19,12 @@ export default function Footer() {
             Dashboard
           </Link>
           <Link
+            href="/realtors"
+            className="hover:text-neutral-800 dark:hover:text-white transition-colors duration-200"
+          >
+            Realtors
+          </Link>
+          <Link
             href="/profile"
             className="hover:text-neutral-800 dark:hover:text-white transition-colors duration-200"
           >

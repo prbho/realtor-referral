@@ -76,3 +76,25 @@ export async function sendReferralNotificationEmail(
   console.log("Referral notification email sent", { id: data?.id });
   return data;
 }
+
+export async function sendContactEmail(
+  toEmail: string,
+  subject: string,
+  html: string
+) {
+  const { data, error } = await resend.emails.send({
+    from: process.env.EMAIL_FROM || "onboarding@resend.dev",
+    to: toEmail,
+    subject,
+    html,
+  });
+
+  if (error) {
+    console.error("Resend failed to send contact email", error);
+    throw new Error(`Failed to send contact email: ${error.message}`);
+  }
+
+  await recordEmailSent();
+  console.log("Contact email sent", { id: data?.id });
+  return data;
+}

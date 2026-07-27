@@ -25,6 +25,7 @@ export default async function SettingsPage() {
       image: true,
       emailNotifications: true,
       marketingEmails: true,
+      hideFromDirectory: true,
     },
   });
 

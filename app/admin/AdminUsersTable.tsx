@@ -41,44 +41,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import Image from "next/image";
+import { UserRow } from "@/types/user";
 
 type Role = "USER" | "REALTOR" | "ADMIN";
-
-type Referral = {
-  id: string;
-  name: string | null;
-  email: string;
-  role: string;
-  createdAt: string;
-  image: string | null;
-  nin: string | null;
-};
-
-type UserRow = {
-  isSuperAdmin: boolean;
-  image: string | null;
-  id: string;
-  name: string | null;
-  email: string;
-  role: Role;
-  referralCode: string | null;
-  referralCount: number;
-  commission: number;
-  createdAt: string;
-  phone: string | null;
-  streetAddress: string | null;
-  apartment: string | null;
-  city: string | null;
-  state: string | null;
-  zipCode: string | null;
-  country: string | null;
-  accountName: string | null;
-  accountNumber: string | null;
-  bankName: string | null;
-  referrals: Referral[];
-  nin: string | null;
-  referredBy: { name: string; id: string } | null;
-};
 
 const ROLE_OPTIONS: Role[] = ["USER", "REALTOR", "ADMIN"];
 const PAGE_SIZE_OPTIONS = [20, 30, 50, 100, 200, 500] as const;
@@ -920,7 +885,7 @@ export default function AdminUsersTable({
                         <UserAvatar src={user.image} name={user.name} />
                         <button
                           onClick={() => openProfile(user)}
-                          className="font-medium text-neutral-800 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 hover:underline truncate"
+                          className="font-medium capitalize text-neutral-800 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 hover:underline truncate"
                           title={user.name || ""}
                         >
                           {user.name || "—"}
@@ -1314,7 +1279,7 @@ export default function AdminUsersTable({
                 />
                 <div>
                   <div className="flex items-center gap-3">
-                    <h2 className="font-semibold text-neutral-800 dark:text-white">
+                    <h2 className="font-semibold capitalize text-neutral-800 dark:text-white">
                       {profileUser.name || "—"}
                     </h2>
                     <button

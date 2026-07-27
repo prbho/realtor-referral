@@ -22,6 +22,7 @@ export default async function ProfilePage() {
       email: true,
       role: true,
       phone: true,
+      whatsapp: true,
       streetAddress: true,
       apartment: true,
       city: true,

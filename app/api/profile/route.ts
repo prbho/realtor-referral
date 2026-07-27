@@ -10,6 +10,7 @@ import { sendVerificationEmail } from "@/lib/email";
 
 const OPTIONAL_TEXT_FIELDS = [
   "phone",
+  "whatsapp",
   "streetAddress",
   "apartment",
   "city",

@@ -7,9 +7,9 @@ export default function Layout({
   children: React.ReactNode;
 }>) {
   return (
-    <div className="bg-white dark:bg-[#0d1117] transition-colors duration-300">
+    <div className="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
       <Header />
-      <main className="min-h-full flex flex-col">{children}</main>
+      <main className="flex flex-col">{children}</main>
       <Footer />
     </div>
   );

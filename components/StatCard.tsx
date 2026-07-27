@@ -40,7 +40,7 @@ export default function StatCard({
     <div
       className={`${
         bg || "bg-white dark:bg-slate-800"
-      } rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-5 transition-colors duration-200`}
+      } rounded-xl border border-slate-200 dark:border-slate-700 p-5 transition-colors duration-200`}
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">

@@ -11,13 +11,16 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
-    const { emailNotifications, marketingEmails } = await request.json();
+    const { emailNotifications, marketingEmails, hideFromDirectory } =
+      await request.json();
 
     const updates: Record<string, boolean> = {};
     if (typeof emailNotifications === "boolean")
       updates.emailNotifications = emailNotifications;
     if (typeof marketingEmails === "boolean")
       updates.marketingEmails = marketingEmails;
+    if (typeof hideFromDirectory === "boolean")
+      updates.hideFromDirectory = hideFromDirectory;
 
     if (Object.keys(updates).length === 0) {
       return NextResponse.json(

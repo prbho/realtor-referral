@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { isValidEmail, isValidNIN } from "@/lib/validation";
@@ -9,7 +9,6 @@ import {
   Loader2,
   Landmark,
   User,
-  Phone,
   MapPin,
   Globe,
   CreditCard,
@@ -25,6 +24,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Card,
   CardContent,
   CardDescription,
@@ -33,6 +39,7 @@ import {
 } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { countryCodes, NIGERIA_STATES } from "@/types/location";
 
 type UserData = {
   id: string;
@@ -41,6 +48,7 @@ type UserData = {
   role: string;
   image: string | null;
   phone: string | null;
+  whatsapp: string | null;
   streetAddress: string | null;
   apartment: string | null;
   city: string | null;
@@ -48,7 +56,7 @@ type UserData = {
   zipCode: string | null;
   country: string | null;
   nin: string | null;
-  ninVerified: boolean; // ✅ added
+  ninVerified: boolean;
   accountName: string | null;
   accountNumber: string | null;
   bankName: string | null;
@@ -59,6 +67,35 @@ type FormStatus = {
   saved: boolean;
   error: string;
 };
+
+type FieldStatusMap = Record<string, FormStatus>;
+
+type FormData = {
+  name: string;
+  email: string;
+  phone: string;
+  whatsapp: string;
+  streetAddress: string;
+  apartment: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  country: string;
+  nin: string;
+  accountName: string;
+  accountNumber: string;
+  bankName: string;
+};
+
+const COUNTRY_OPTIONS = (() => {
+  const regionNames = new Intl.DisplayNames(["en"], { type: "region" });
+  const countries = countryCodes
+    .map((code) => regionNames.of(code))
+    .filter((name): name is string => Boolean(name))
+    .filter((name) => name !== "Nigeria")
+    .sort((a, b) => a.localeCompare(b));
+  return ["Nigeria", ...countries];
+})();
 
 const STEPS = [
   { id: "personal", label: "Personal", icon: User },
@@ -94,11 +131,9 @@ export default function ProfileForm({ user }: { user: UserData }) {
   const { update } = useSession();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // ─── URL hash → step index ───────────────────────────────────
   const getStepFromHash = (hash: string): number => {
     if (hash === "#nin" || hash === "#identification") return 2;
-    // Map other hashes if needed
-    return 0; // default to personal
+    return 0;
   };
 
   const [currentStep, setCurrentStep] = useState(() => {
@@ -108,7 +143,6 @@ export default function ProfileForm({ user }: { user: UserData }) {
     return 0;
   });
 
-  // ─── Listen for hash changes ──────────────────────────────
   useEffect(() => {
     const handleHashChange = () => {
       const step = getStepFromHash(window.location.hash);
@@ -127,30 +161,63 @@ export default function ProfileForm({ user }: { user: UserData }) {
     error: "",
   });
 
-  const [formData, setFormData] = useState({
-    name: user.name || "",
-    email: user.email,
-    phone: user.phone || "",
-    streetAddress: user.streetAddress || "",
-    apartment: user.apartment || "",
-    city: user.city || "",
-    state: user.state || "",
-    zipCode: user.zipCode || "",
-    country: user.country || "",
-    nin: user.nin || "",
-    accountName: user.accountName || "",
-    accountNumber: user.accountNumber || "",
-    bankName: user.bankName || "",
+  // ─── Initial form values ────────────────────────────────────
+  const buildFormData = (u: UserData): FormData => ({
+    name: u.name || "",
+    email: u.email,
+    phone: u.phone || "",
+    whatsapp: u.whatsapp || "",
+    streetAddress: u.streetAddress || "",
+    apartment: u.apartment || "",
+    city: u.city || "",
+    state: u.state || "",
+    zipCode: u.zipCode || "",
+    country: u.country || "",
+    nin: u.nin || "",
+    accountName: u.accountName || "",
+    accountNumber: u.accountNumber || "",
+    bankName: u.bankName || "",
   });
+
+  const [initialFormValues, setInitialFormValues] = useState<FormData>(() =>
+    buildFormData(user)
+  );
+  const [formData, setFormData] = useState<FormData>(() => buildFormData(user));
+
+  // Track previous user to avoid unnecessary updates
+  const prevUserRef = useRef(user);
+
+  // Sync internal state when user prop changes (e.g., after profile update)
+  useEffect(() => {
+    // Only update if the user object actually changed
+    if (prevUserRef.current !== user) {
+      const newValues = buildFormData(user);
+      // Compare with current initialFormValues to avoid infinite loop
+      const hasChanged = Object.keys(newValues).some(
+        (key) =>
+          newValues[key as keyof FormData] !==
+          initialFormValues[key as keyof FormData]
+      );
+      if (hasChanged) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setInitialFormValues(newValues);
+        setFormData(newValues);
+      }
+      prevUserRef.current = user;
+    }
+  }, [user, initialFormValues]);
 
   const [stepStatus, setStepStatus] = useState<FormStatus>({
     loading: false,
     saved: false,
     error: "",
   });
+  const [fieldStatus, setFieldStatus] = useState<FieldStatusMap>({});
 
   const [isVerifying, setIsVerifying] = useState(false);
   const [ninVerified, setNinVerified] = useState(user.ninVerified || false);
+
+  // ─── Handlers ──────────────────────────────────────────────────
 
   const handleVerifyNin = async () => {
     const nin = formData.nin.trim();
@@ -213,9 +280,184 @@ export default function ProfileForm({ user }: { user: UserData }) {
     : "?";
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value as FormData[keyof FormData],
+    });
   };
 
+  const handleCountryChange = (value: string) => {
+    setFormData({ ...formData, country: value });
+  };
+
+  const hasUnsavedChanges = (field: keyof FormData) => {
+    const currentValue = formData[field] ?? "";
+    const initialValue = initialFormValues[field] ?? "";
+    return currentValue.trim() !== initialValue.trim();
+  };
+
+  const handleFieldSave = async (field: keyof FormData, value: string) => {
+    const trimmedValue = value.trim();
+
+    if (
+      field === "country" &&
+      trimmedValue &&
+      !COUNTRY_OPTIONS.includes(trimmedValue)
+    ) {
+      setFieldStatus((prev) => ({
+        ...prev,
+        [field]: {
+          loading: false,
+          saved: false,
+          error: "Please select a country from the list.",
+        },
+      }));
+      return;
+    }
+
+    setFieldStatus((prev) => ({
+      ...prev,
+      [field]: { loading: true, saved: false, error: "" },
+    }));
+
+    try {
+      const res = await fetch("/api/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ [field]: trimmedValue }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        setFieldStatus((prev) => ({
+          ...prev,
+          [field]: {
+            loading: false,
+            saved: false,
+            error: data.error || "Could not save this field.",
+          },
+        }));
+      } else {
+        setInitialFormValues((prev) => ({ ...prev, [field]: trimmedValue }));
+        setFieldStatus((prev) => ({
+          ...prev,
+          [field]: { loading: false, saved: true, error: "" },
+        }));
+        setTimeout(() => {
+          setFieldStatus((prev) => {
+            const next = { ...prev };
+            if (next[field]) {
+              next[field] = { ...next[field], saved: false };
+            }
+            return next;
+          });
+        }, 2000);
+        router.refresh();
+      }
+    } catch {
+      setFieldStatus((prev) => ({
+        ...prev,
+        [field]: {
+          loading: false,
+          saved: false,
+          error: "Something went wrong. Please try again.",
+        },
+      }));
+    }
+  };
+
+  const renderFieldWithSave = ({
+    field,
+    label,
+    value,
+    type = "text",
+    placeholder,
+    inputMode,
+    maxLength,
+    required,
+    autoComplete,
+    icon,
+    list,
+    datalistOptions,
+  }: {
+    field: keyof FormData;
+    label: React.ReactNode;
+    value: string;
+    type?: React.HTMLInputTypeAttribute;
+    placeholder?: string;
+    inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"];
+    maxLength?: number;
+    required?: boolean;
+    autoComplete?: string;
+    icon?: React.ReactNode;
+    list?: string;
+    datalistOptions?: readonly string[];
+  }) => {
+    const status = fieldStatus[field];
+    const showSaveButton = hasUnsavedChanges(field);
+
+    return (
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <Label htmlFor={field} className="flex items-center gap-2">
+            {icon}
+            {label}
+          </Label>
+        </div>
+        <div className="relative">
+          <Input
+            id={field}
+            name={field}
+            type={type}
+            value={value}
+            onChange={handleChange}
+            placeholder={placeholder}
+            inputMode={inputMode}
+            maxLength={maxLength}
+            required={required}
+            autoComplete={autoComplete}
+            list={list}
+            className="pr-10"
+          />
+          {list && datalistOptions?.length ? (
+            <datalist id={list}>
+              {datalistOptions.map((option) => (
+                <option key={option} value={option} />
+              ))}
+            </datalist>
+          ) : null}
+          {showSaveButton ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-xs"
+              onClick={() => handleFieldSave(field, value)}
+              disabled={status?.loading}
+              className="absolute right-1.5 top-1/2 border border-stone-200 cursor-pointer -translate-y-1/2 text-emerald-600 hover:text-emerald-700 dark:text-emerald-400"
+              title="Save this field"
+            >
+              {status?.loading ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Check className="h-3.5 w-3.5" />
+              )}
+            </Button>
+          ) : null}
+        </div>
+        {status?.error ? (
+          <p className="text-xs text-red-600 dark:text-red-400">
+            {status.error}
+          </p>
+        ) : status?.saved ? (
+          <p className="text-xs text-emerald-600 dark:text-emerald-400">
+            Saved
+          </p>
+        ) : null}
+      </div>
+    );
+  };
+
+  // ─── Photo handlers ──────────────────────────────────────────
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -289,6 +531,7 @@ export default function ProfileForm({ user }: { user: UserData }) {
     }
   };
 
+  // ─── Navigation ──────────────────────────────────────────────
   const validateStep = (step: number): string | null => {
     if (step === 0) {
       if (!formData.name.trim()) return "Full name is required";
@@ -472,7 +715,7 @@ export default function ProfileForm({ user }: { user: UserData }) {
                     onClick={() => goToStep(index)}
                     disabled={!isClickable}
                     className="flex flex-col items-center gap-1.5 group"
-                    id={step.id} // optional, can be used for CSS targeting
+                    id={step.id}
                   >
                     <div
                       className={`h-10 w-10 rounded-full flex items-center justify-center border-2 transition-colors duration-200 ${
@@ -530,52 +773,48 @@ export default function ProfileForm({ user }: { user: UserData }) {
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="name">Full Name *</Label>
-                      <Input
-                        id="name"
-                        name="name"
-                        value={formData.name}
-                        onChange={handleChange}
-                        placeholder="John Doe"
-                        required
-                      />
-                    </div>
+                    {renderFieldWithSave({
+                      field: "name",
+                      label: "Full Name *",
+                      value: formData.name,
+                      placeholder: "John Doe",
+                      required: true,
+                    })}
 
                     <div className="space-y-2">
-                      <Label htmlFor="email">Email Address *</Label>
-                      <Input
-                        id="email"
-                        name="email"
-                        type="email"
-                        value={formData.email}
-                        onChange={handleChange}
-                        placeholder="john@example.com"
-                        required
-                      />
+                      {renderFieldWithSave({
+                        field: "email",
+                        label: "Email Address *",
+                        value: formData.email,
+                        type: "email",
+                        placeholder: "john@example.com",
+                        required: true,
+                      })}
                       <p className="text-xs text-gray-500 dark:text-gray-400">
                         Changing your email will require re-verifying the new
                         address.
                       </p>
                     </div>
 
-                    <div className="space-y-2">
-                      <Label
-                        htmlFor="phone"
-                        className="flex items-center gap-2"
-                      >
-                        <Phone className="h-4 w-4 text-gray-500" />
-                        Phone Number
-                      </Label>
-                      <Input
-                        id="phone"
-                        name="phone"
-                        type="tel"
-                        value={formData.phone}
-                        onChange={handleChange}
-                        placeholder="+234 800 000 0000"
-                      />
-                    </div>
+                    {renderFieldWithSave({
+                      field: "phone",
+                      label: "Phone Number",
+                      value: formData.phone,
+                      type: "tel",
+                      placeholder: "+234 800 000 0000",
+                    })}
+
+                    {renderFieldWithSave({
+                      field: "whatsapp",
+                      label: "WhatsApp Number",
+                      value: formData.whatsapp,
+                      type: "tel",
+                      placeholder: "+234 800 000 0000",
+                    })}
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      This WhatsApp number will be visible to anyone viewing
+                      your profile.
+                    </p>
                   </CardContent>
                 </>
               )}
@@ -590,77 +829,99 @@ export default function ProfileForm({ user }: { user: UserData }) {
                     <CardDescription>Where you&apos;re based.</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="streetAddress">Street Address</Label>
-                      <Input
-                        id="streetAddress"
-                        name="streetAddress"
-                        value={formData.streetAddress}
-                        onChange={handleChange}
-                        placeholder="123 Main Street"
-                      />
-                    </div>
+                    {renderFieldWithSave({
+                      field: "streetAddress",
+                      label: "Street Address",
+                      value: formData.streetAddress,
+                      placeholder: "123 Main Street",
+                    })}
 
-                    <div className="space-y-2">
-                      <Label htmlFor="apartment">Apartment, Suite, etc.</Label>
-                      <Input
-                        id="apartment"
-                        name="apartment"
-                        value={formData.apartment}
-                        onChange={handleChange}
-                        placeholder="Apt 4B"
-                      />
+                    {renderFieldWithSave({
+                      field: "apartment",
+                      label: "Apartment, Suite, etc.",
+                      value: formData.apartment,
+                      placeholder: "Apt 4B",
+                    })}
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {renderFieldWithSave({
+                        field: "city",
+                        label: "City",
+                        value: formData.city,
+                        placeholder: "Lagos",
+                      })}
+                      {renderFieldWithSave({
+                        field: "state",
+                        label: "State / Province",
+                        value: formData.state,
+                        placeholder: "Lagos State",
+                        list: "nigeria-states",
+                        datalistOptions: NIGERIA_STATES,
+                      })}
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {renderFieldWithSave({
+                        field: "zipCode",
+                        label: "ZIP / Postal Code",
+                        value: formData.zipCode,
+                        placeholder: "100001",
+                      })}
                       <div className="space-y-2">
-                        <Label htmlFor="city">City</Label>
-                        <Input
-                          id="city"
-                          name="city"
-                          value={formData.city}
-                          onChange={handleChange}
-                          placeholder="Lagos"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="state">State / Province</Label>
-                        <Input
-                          id="state"
-                          name="state"
-                          value={formData.state}
-                          onChange={handleChange}
-                          placeholder="Lagos State"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="zipCode">ZIP / Postal Code</Label>
-                        <Input
-                          id="zipCode"
-                          name="zipCode"
-                          value={formData.zipCode}
-                          onChange={handleChange}
-                          placeholder="100001"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label
-                          htmlFor="country"
-                          className="flex items-center gap-2"
-                        >
-                          <Globe className="h-4 w-4 text-gray-500" />
-                          Country
-                        </Label>
-                        <Input
-                          id="country"
-                          name="country"
-                          value={formData.country}
-                          onChange={handleChange}
-                          placeholder="Nigeria"
-                        />
+                        <div className="flex items-center gap-2">
+                          <Label
+                            htmlFor="country"
+                            className="flex items-center gap-2"
+                          >
+                            <Globe className="h-4 w-4 text-gray-500" />
+                            Country
+                          </Label>
+                        </div>
+                        <div className="relative">
+                          <Select
+                            value={formData.country || "Nigeria"}
+                            onValueChange={handleCountryChange}
+                          >
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Select a country" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {COUNTRY_OPTIONS.map((option) => (
+                                <SelectItem key={option} value={option}>
+                                  {option}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          {hasUnsavedChanges("country") ? (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon-xs"
+                              onClick={() =>
+                                handleFieldSave("country", formData.country)
+                              }
+                              disabled={fieldStatus.country?.loading}
+                              className="absolute right-10 top-1/2 border border-stone-200 cursor-pointer -translate-y-1/2 text-emerald-600 hover:text-emerald-700 dark:text-emerald-400"
+                              title="Save this field"
+                            >
+                              {fieldStatus.country?.loading ? (
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              ) : (
+                                <Check className="h-3.5 w-3.5" />
+                              )}
+                            </Button>
+                          ) : null}
+                        </div>
+                        {fieldStatus.country?.error ? (
+                          <p className="text-xs text-red-600 dark:text-red-400">
+                            {fieldStatus.country.error}
+                          </p>
+                        ) : fieldStatus.country?.saved ? (
+                          <p className="text-xs text-emerald-600 dark:text-emerald-400">
+                            Saved
+                          </p>
+                        ) : null}
                       </div>
                     </div>
                   </CardContent>
@@ -680,9 +941,26 @@ export default function ProfileForm({ user }: { user: UserData }) {
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="nin">
-                        National Identification Number (NIN) *
-                      </Label>
+                      <div className="flex items-center justify-between gap-2">
+                        <Label htmlFor="nin">
+                          National Identification Number (NIN) *
+                        </Label>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon-xs"
+                          onClick={() => handleFieldSave("nin", formData.nin)}
+                          disabled={fieldStatus.nin?.loading}
+                          className="text-emerald-600 hover:text-emerald-700 dark:text-emerald-400"
+                          title="Save this field"
+                        >
+                          {fieldStatus.nin?.loading ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Check className="h-3.5 w-3.5" />
+                          )}
+                        </Button>
+                      </div>
                       <div className="flex items-end gap-3">
                         <div className="flex-1">
                           <Input
@@ -696,7 +974,6 @@ export default function ProfileForm({ user }: { user: UserData }) {
                             required
                           />
                         </div>
-                        {/* Show verify button only if NIN is filled and not verified */}
                         {formData.nin.trim() && !ninVerified && (
                           <Button
                             type="button"
@@ -712,7 +989,6 @@ export default function ProfileForm({ user }: { user: UserData }) {
                             )}
                           </Button>
                         )}
-                        {/* Show verified status */}
                         {ninVerified && (
                           <span className="shrink-0 flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
                             <Check className="h-4 w-4" /> Verified
@@ -728,6 +1004,15 @@ export default function ProfileForm({ user }: { user: UserData }) {
                           Please verify your NIN to access referral features.
                         </p>
                       )}
+                      {fieldStatus.nin?.error ? (
+                        <p className="text-xs text-red-600 dark:text-red-400">
+                          {fieldStatus.nin.error}
+                        </p>
+                      ) : fieldStatus.nin?.saved ? (
+                        <p className="text-xs text-emerald-600 dark:text-emerald-400">
+                          Saved
+                        </p>
+                      ) : null}
                     </div>
                   </CardContent>
                 </>
@@ -746,61 +1031,33 @@ export default function ProfileForm({ user }: { user: UserData }) {
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <Label
-                        htmlFor="accountName"
-                        className="flex items-center gap-2"
-                      >
-                        <User className="h-4 w-4 text-gray-500" />
-                        Account Holder Name *
-                      </Label>
-                      <Input
-                        id="accountName"
-                        name="accountName"
-                        value={formData.accountName}
-                        onChange={handleChange}
-                        placeholder="John Doe"
-                        required
-                      />
-                    </div>
+                    {renderFieldWithSave({
+                      field: "accountName",
+                      label: "Account Holder Name *",
+                      value: formData.accountName,
+                      placeholder: "John Doe",
+                      required: true,
+                      icon: <User className="h-4 w-4 text-gray-500" />,
+                    })}
 
-                    <div className="space-y-2">
-                      <Label
-                        htmlFor="accountNumber"
-                        className="flex items-center gap-2"
-                      >
-                        <CreditCard className="h-4 w-4 text-gray-500" />
-                        Account Number *
-                      </Label>
-                      <Input
-                        id="accountNumber"
-                        name="accountNumber"
-                        type="text"
-                        value={formData.accountNumber}
-                        onChange={handleChange}
-                        placeholder="1234567890"
-                        autoComplete="off"
-                        required
-                      />
-                    </div>
+                    {renderFieldWithSave({
+                      field: "accountNumber",
+                      label: "Account Number *",
+                      value: formData.accountNumber,
+                      placeholder: "1234567890",
+                      autoComplete: "off",
+                      required: true,
+                      icon: <CreditCard className="h-4 w-4 text-gray-500" />,
+                    })}
 
-                    <div className="space-y-2">
-                      <Label
-                        htmlFor="bankName"
-                        className="flex items-center gap-2"
-                      >
-                        <Banknote className="h-4 w-4 text-gray-500" />
-                        Bank Name *
-                      </Label>
-                      <Input
-                        id="bankName"
-                        name="bankName"
-                        value={formData.bankName}
-                        onChange={handleChange}
-                        placeholder="GTBank"
-                        required
-                      />
-                    </div>
+                    {renderFieldWithSave({
+                      field: "bankName",
+                      label: "Bank Name *",
+                      value: formData.bankName,
+                      placeholder: "GTBank",
+                      required: true,
+                      icon: <Banknote className="h-4 w-4 text-gray-500" />,
+                    })}
 
                     <Alert className="bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800">
                       <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />

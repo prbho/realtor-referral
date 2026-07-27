@@ -17,7 +17,7 @@ export default function Greeting({ name }: { name: string | null }) {
       style={{ fontFamily: "var(--font-fraunces)" }}
       className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white"
     >
-      {greeting}, {getFirstName(name)}! 👋
+      {greeting}, <span className="capitalize">{getFirstName(name)}</span>! 👋
     </h1>
   );
 }

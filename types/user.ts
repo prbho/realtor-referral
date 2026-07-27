@@ -11,6 +11,7 @@ export type Referral = {
 };
 
 export type UserRow = {
+  isSuperAdmin: boolean;
   image: string | null;
   id: string;
   name: string | null;
@@ -32,4 +33,35 @@ export type UserRow = {
   bankName: string | null;
   referrals: Referral[];
   nin: string | null;
+  referredBy: { name: string; id: string } | null;
+};
+
+// ─── Define the shape of the form data ─────────────────────────
+export type FormData = {
+  name: string;
+  email: string;
+  phone: string;
+  whatsapp: string;
+  streetAddress: string;
+  apartment: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  country: string;
+  nin: string;
+  accountName: string;
+  accountNumber: string;
+  bankName: string;
+};
+
+export type Realtor = {
+  id: string;
+  name: string | null;
+  image: string | null;
+  city: string | null;
+  state: string | null;
+  country: string | null;
+  phone: string | null;
+  email: string;
+  createdAt: string;
 };

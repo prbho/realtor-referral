@@ -70,7 +70,13 @@ const REQUIRED_PROFILE_FIELDS = [
   { key: "accountNumber", label: "Account Number" },
   { key: "bankName", label: "Bank Name" },
   { key: "nin", label: "NIN" },
+  { key: "whatsapp", label: "WhatsApp Number" },
 ] as const;
+
+const hasProfileValue = (value: unknown) => {
+  if (typeof value === "string") return value.trim().length > 0;
+  return Boolean(value);
+};
 
 // ─── Main Component ──────────────────────────────────────────
 export default async function DashboardPage() {
@@ -95,6 +101,7 @@ export default async function DashboardPage() {
       accountName: true,
       accountNumber: true,
       bankName: true,
+      whatsapp: true,
       nin: true,
       ninVerified: true,
       referralCode: true,
@@ -113,7 +120,7 @@ export default async function DashboardPage() {
   const isAdmin = user.role === "ADMIN";
 
   const missingFields = REQUIRED_PROFILE_FIELDS.filter(
-    (field) => !(user as unknown as Record<string, unknown>)[field.key]
+    (field) => !hasProfileValue((user as Record<string, unknown>)[field.key])
   );
   const isProfileIncomplete = missingFields.length > 0;
 
@@ -259,7 +266,7 @@ export default async function DashboardPage() {
       />
       <div className="flex flex-col-reverse md:flex-row gap-4 overflow-x-auto px-0 pb-2 md:grid md:grid-cols-5 md:gap-6 md:overflow-visible">
         {/* ─── Referrals List ────────────────────────────────────── */}
-        <div className="col-span-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-6 transition-colors duration-200">
+        <div className="col-span-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 transition-colors duration-200">
           <div className="flex items-center gap-2 mb-4">
             <UserRoundArrowLeft className="h-5 w-5 text-violet-600 dark:text-violet-400" />
             <h2 className="font-semibold text-lg text-slate-900 dark:text-white">
@@ -268,7 +275,7 @@ export default async function DashboardPage() {
           </div>
 
           {user.referrals.length === 0 ? (
-            <div className="bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-700 rounded-2xl p-8 text-center">
+            <div className="bg-slate-50 dark:bg-slate-950/40 dark:border-slate-700 rounded-2xl p-8 text-center">
               <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-sky-100 text-sky-700 dark:bg-sky-900/50 dark:text-sky-300">
                 <Share2 className="h-6 w-6" />
               </div>

@@ -30,7 +30,7 @@ export default function HomeMilestone() {
           icon={<Users className="h-4 w-4 text-sky-300" />}
           reward={
             <>
-              <span>₦500K</span>
+              <span className="text-white">₦500K</span>
               <p className="text-sm font-medium text-slate-300 mt-1">
                 Plus{" "}
                 <span className="font-semibold text-white">
@@ -58,7 +58,7 @@ export default function HomeMilestone() {
           icon={<TrendingUp className="h-4 w-4 text-sky-300" />}
           reward={
             <>
-              <span>₦800K</span>
+              <span className="text-white">₦800K</span>
               <p className="text-sm font-medium text-slate-300 mt-1">
                 Plus{" "}
                 <span className="font-semibold text-white">
@@ -87,7 +87,7 @@ export default function HomeMilestone() {
           variant="gold"
           reward={
             <>
-              <span>₦300K</span>
+              <span className="text-white">₦300K</span>
               <span className="ml-1 text-sm font-medium text-slate-300">
                 Monthly Salary
               </span>

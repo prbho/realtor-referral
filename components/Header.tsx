@@ -83,6 +83,12 @@ export default function Header() {
 
         {/* Right side navigation */}
         <nav className="flex items-center gap-4">
+          {/* <Link
+            href="/realtors"
+            className="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors duration-200"
+          >
+            Realtors
+          </Link> */}
           {status === "loading" ? (
             <div className="h-9 w-9 rounded-full bg-gray-200 dark:bg-neutral-700 animate-pulse" />
           ) : session ? (

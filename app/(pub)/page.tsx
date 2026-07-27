@@ -38,7 +38,7 @@ export default async function HomePage() {
         <div className="absolute inset-0 z-0">
           <Image
             src="/realtors.webp"
-            quality={80}
+            quality={75}
             alt="Real Estate"
             fill
             priority
@@ -166,6 +166,33 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-20">
+        <div className="text-center max-w-3xl mx-auto mb-12">
+          <p className="text-sm font-semibold tracking-widest text-sky-700 uppercase mb-4 dark:text-sky-400">
+            Realtor Directory
+          </p>
+          <h2
+            style={{ fontFamily: "var(--font-fraunces)" }}
+            className="text-3xl md:text-4xl font-medium text-slate-900 dark:text-white"
+          >
+            Browse our public list of verified Realtors.
+          </h2>
+          <p className="mt-4 text-lg text-slate-600 dark:text-slate-400 leading-relaxed">
+            Connect with experienced Realtors who are already part of our
+            network and ready to help you grow your business.
+          </p>
+        </div>
+        <div className="flex justify-center">
+          <Link
+            href="/realtors"
+            className="inline-flex items-center justify-center gap-2 rounded-full bg-slate-900 px-8 py-4 text-sm font-semibold text-white hover:bg-slate-800 transition-colors dark:bg-sky-500 dark:text-slate-950 dark:hover:bg-sky-400"
+          >
+            View Realtor Directory
+            <ArrowRight className="w-4 h-4" />
+          </Link>
+        </div>
+      </section> */}
 
       {/* ─── How It Works ──────────────────────────────────────────── */}
       <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-20">

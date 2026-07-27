@@ -3,7 +3,7 @@ import { Users, TrendingUp, Crown } from "lucide-react";
 
 export default function Recruitment() {
   return (
-    <div className="bg-gradient-to-br from-slate-900 to-slate-800 dark:from-slate-950 dark:to-slate-900 text-white rounded-xl shadow-lg p-5 transition-colors duration-200">
+    <div>
       <div>
         <h2 className="text-lg font-semibold tracking-tight">
           Recruitment Milestones & Benefits
@@ -11,7 +11,7 @@ export default function Recruitment() {
         <p className="text-sm text-slate-400 mt-0.5">
           Unlock exclusive rewards and milestone-based benefits
         </p>
-        <p className="mt-3 text-sm font-medium text-sky-300">
+        <p className="mt-3 text-xs font-medium text-emerald-600">
           Share your referral link and start earning higher rewards as your team
           grows.
         </p>
@@ -20,15 +20,15 @@ export default function Recruitment() {
         <MilestoneCard
           number="01"
           title="TEAM MANAGER (TM)"
-          icon={<Users className="h-4 w-4 text-blue-700" />}
+          icon={<Users className="h-3 w-3 text-[#0b3264]" />}
           reward={
             <>
               <span>₦500K</span>
-              <p className="text-sm font-medium text-slate-200">
+              <p className="text-xs font-normal text-slate-500 dark:text-slate-400">
                 Plus <span className="font-bold">1% Annual Cash Gift</span>
                 <br />
                 when your team makes
-                <span className="font-bold text-lime-400">
+                <span className="font-bold text-emerald-600">
                   {" "}
                   ₦1 Billion Sales
                 </span>
@@ -44,15 +44,15 @@ export default function Recruitment() {
         <MilestoneCard
           number="02"
           title="SENIOR TEAM BUILDER (STB)"
-          icon={<TrendingUp className="h-4 w-4 text-blue-700" />}
+          icon={<TrendingUp className="h-3 w-3 text-[#0b3264]" />}
           reward={
             <>
               <span>₦800K</span>
-              <p className="text-sm font-medium text-slate-200 mt-1">
+              <p className="text-xs font-normal text-slate-500 dark:text-slate-400 mt-1">
                 Plus 1% Annual Cash Gift
                 <br />
                 when your team makes
-                <span className="font-bold text-lime-400">
+                <span className="font-bold text-emerald-600">
                   {" "}
                   ₦2 Billion Sales
                 </span>
@@ -68,15 +68,15 @@ export default function Recruitment() {
         <MilestoneCard
           number="03"
           title="COMPANY AMBASSADOR (CA)"
-          icon={<Crown className="h-4 w-4 text-blue-700" />}
+          icon={<Crown className="h-3 w-3 text-[#0b3264]" />}
           variant="gold" // <-- different background for third card
           reward={
             <>
               <span>₦300K</span>
-              <span className="ml-1 text-sm font-medium text-slate-200">
+              <span className="ml-1 text-sm font-normal text-slate-500 dark:text-slate-400">
                 Monthly Salary
               </span>
-              <ul className="text-sm font-medium text-slate-200 mt-1 space-y-0.5">
+              <ul className="text-xs font-normal text-slate-500 dark:text-slate-400 mt-1 space-y-0.5">
                 <li>+1% Cash Gift</li>
                 <li>Branded Marketing Car</li>
                 <li>All Expenses Paid Trip</li>

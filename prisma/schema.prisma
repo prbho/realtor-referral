@@ -27,11 +27,13 @@ model User {
   city               String?
   country            String?
   phone              String?
+  whatsapp           String?
   state              String?
   streetAddress      String?
   zipCode            String?
   emailNotifications Boolean   @default(true)
   marketingEmails    Boolean   @default(true)
+  hideFromDirectory  Boolean   @default(false)
   themePreference    String?   @default("system")
   nin                String?   @unique
   isSuperAdmin       Boolean   @default(false)

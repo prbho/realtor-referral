@@ -28,6 +28,7 @@ import {
   Trash2,
   BellRing,
   BellOff,
+  EyeOff,
   LucideIcon,
   LockKeyhole,
 } from "lucide-react";
@@ -39,6 +40,7 @@ type User = {
   email: string;
   emailNotifications: boolean;
   marketingEmails: boolean;
+  hideFromDirectory: boolean;
 };
 
 type FormStatus = {
@@ -65,6 +67,9 @@ export default function SettingsForm({ user }: { user: User }) {
     user.emailNotifications
   );
   const [marketingEmails, setMarketingEmails] = useState(user.marketingEmails);
+  const [hideFromDirectory, setHideFromDirectory] = useState(
+    user.hideFromDirectory
+  );
   const [prefsStatus, setPrefsStatus] = useState<FormStatus>({
     loading: false,
     saved: false,
@@ -79,6 +84,12 @@ export default function SettingsForm({ user }: { user: User }) {
   });
 
   const [themeStatus, setThemeStatus] = useState<FormStatus>({
+    loading: false,
+    saved: false,
+    error: "",
+  });
+
+  const [directoryStatus, setDirectoryStatus] = useState<FormStatus>({
     loading: false,
     saved: false,
     error: "",
@@ -180,6 +191,42 @@ export default function SettingsForm({ user }: { user: User }) {
     }
   };
 
+  const handleDirectoryToggle = async (checked: boolean) => {
+    setDirectoryStatus({ loading: true, saved: false, error: "" });
+    setHideFromDirectory(checked); // optimistic update
+
+    try {
+      const res = await fetch("/api/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ hideFromDirectory: checked }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        setHideFromDirectory(!checked); // revert
+        setDirectoryStatus({
+          loading: false,
+          saved: false,
+          error: data.error || "Failed to update directory visibility",
+        });
+      } else {
+        setDirectoryStatus({ loading: false, saved: true, error: "" });
+        setTimeout(
+          () => setDirectoryStatus((prev) => ({ ...prev, saved: false })),
+          3000
+        );
+      }
+    } catch {
+      setHideFromDirectory(!checked); // revert
+      setDirectoryStatus({
+        loading: false,
+        saved: false,
+        error: "Something went wrong. Please try again.",
+      });
+    }
+  };
+
   const handlePrefsSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setPrefsStatus({ loading: true, saved: false, error: "" });
@@ -188,7 +235,11 @@ export default function SettingsForm({ user }: { user: User }) {
       const res = await fetch("/api/settings", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ emailNotifications, marketingEmails }),
+        body: JSON.stringify({
+          emailNotifications,
+          marketingEmails,
+          // hideFromDirectory is now handled separately
+        }),
       });
       const data = await res.json();
 
@@ -404,7 +455,7 @@ export default function SettingsForm({ user }: { user: User }) {
               </Card>
             </TabsContent>
 
-            {/* Notifications Tab */}
+            {/* Notifications Tab – now only email preferences */}
             <TabsContent value="notifications" id="notifications">
               <Card>
                 <CardHeader>
@@ -462,6 +513,8 @@ export default function SettingsForm({ user }: { user: User }) {
                           onCheckedChange={setMarketingEmails}
                         />
                       </div>
+
+                      {/* Hide from directory removed from here */}
                     </div>
 
                     {renderErrorAlert(prefsStatus.error)}
@@ -491,76 +544,127 @@ export default function SettingsForm({ user }: { user: User }) {
               </Card>
             </TabsContent>
 
-            {/* Display Tab */}
+            {/* Display Tab – now includes Theme + Directory Visibility */}
             <TabsContent value="display" id="display">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <MonitorCog className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-                    Theme Preference
-                  </CardTitle>
-                  <CardDescription>
-                    Choose your preferred theme for the application
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    {themeOptions.map(
-                      ({ value, label, icon: Icon, description }) => {
-                        const isActive = theme === value;
-                        return (
-                          <button
-                            key={value}
-                            type="button"
-                            onClick={() => handleThemeChange(value)}
-                            className={`relative p-4 rounded-lg border-2 transition-all duration-200 text-center ${
-                              isActive
-                                ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
-                                : "border-gray-200 dark:border-neutral-700 hover:border-gray-300 dark:hover:border-neutral-600"
-                            }`}
-                            disabled={themeStatus.loading}
-                          >
-                            <div className="flex flex-col items-center gap-2">
-                              <div className="relative">
-                                <Icon
-                                  className={`h-8 w-8 ${
+              <div className="space-y-6">
+                {/* Theme section */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <MonitorCog className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                      Theme Preference
+                    </CardTitle>
+                    <CardDescription>
+                      Choose your preferred theme for the application
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      {themeOptions.map(
+                        ({ value, label, icon: Icon, description }) => {
+                          const isActive = theme === value;
+                          return (
+                            <button
+                              key={value}
+                              type="button"
+                              onClick={() => handleThemeChange(value)}
+                              className={`relative p-4 rounded-lg border-2 transition-all duration-200 text-center ${
+                                isActive
+                                  ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+                                  : "border-gray-200 dark:border-neutral-700 hover:border-gray-300 dark:hover:border-neutral-600"
+                              }`}
+                              disabled={themeStatus.loading}
+                            >
+                              <div className="flex flex-col items-center gap-2">
+                                <div className="relative">
+                                  <Icon
+                                    className={`h-8 w-8 ${
+                                      isActive
+                                        ? "text-blue-600 dark:text-blue-400"
+                                        : "text-gray-600 dark:text-gray-400"
+                                    }`}
+                                  />
+                                  {isActive && themeStatus.loading && (
+                                    <Loader2 className="absolute -top-1 -right-1 h-4 w-4 animate-spin text-blue-600 dark:text-blue-400" />
+                                  )}
+                                  {isActive && !themeStatus.loading && (
+                                    <Check className="absolute -top-1 -right-1 h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                  )}
+                                </div>
+                                <span
+                                  className={`font-medium ${
                                     isActive
                                       ? "text-blue-600 dark:text-blue-400"
-                                      : "text-gray-600 dark:text-gray-400"
+                                      : "text-gray-900 dark:text-white"
                                   }`}
-                                />
-                                {isActive && themeStatus.loading && (
-                                  <Loader2 className="absolute -top-1 -right-1 h-4 w-4 animate-spin text-blue-600 dark:text-blue-400" />
-                                )}
-                                {isActive && !themeStatus.loading && (
-                                  <Check className="absolute -top-1 -right-1 h-4 w-4 text-blue-600 dark:text-blue-400" />
-                                )}
+                                >
+                                  {label}
+                                </span>
+                                <span className="text-xs text-gray-500 dark:text-gray-400">
+                                  {description}
+                                </span>
                               </div>
-                              <span
-                                className={`font-medium ${
-                                  isActive
-                                    ? "text-blue-600 dark:text-blue-400"
-                                    : "text-gray-900 dark:text-white"
-                                }`}
-                              >
-                                {label}
-                              </span>
-                              <span className="text-xs text-gray-500 dark:text-gray-400">
-                                {description}
-                              </span>
-                            </div>
-                          </button>
-                        );
-                      }
-                    )}
-                  </div>
+                            </button>
+                          );
+                        }
+                      )}
+                    </div>
+                    {renderErrorAlert(themeStatus.error)}
+                  </CardContent>
+                </Card>
 
-                  {renderErrorAlert(themeStatus.error)}
-                </CardContent>
-              </Card>
+                {/* Directory Visibility section */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <EyeOff className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+                      Directory Visibility
+                    </CardTitle>
+                    <CardDescription>
+                      Control whether your profile appears in the public realtor
+                      directory
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center justify-between p-4 rounded-lg border border-gray-200 dark:border-neutral-700 hover:bg-gray-50 dark:hover:bg-neutral-800/50 transition-colors">
+                      <div className="space-y-0.5">
+                        <Label
+                          htmlFor="hide-from-directory"
+                          className="text-base"
+                        >
+                          <div className="flex items-center gap-2">
+                            <EyeOff className="h-4 w-4 text-gray-500" />
+                            Hide from realtor directory
+                          </div>
+                        </Label>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                          When enabled, your profile will not appear in the
+                          public directory. This also affects your referral link
+                          visibility if NIN verification is required.
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        {directoryStatus.loading && (
+                          <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+                        )}
+                        {directoryStatus.saved && !directoryStatus.loading && (
+                          <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                        )}
+                        <Switch
+                          id="hide-from-directory"
+                          checked={hideFromDirectory}
+                          onCheckedChange={handleDirectoryToggle}
+                          disabled={directoryStatus.loading}
+                        />
+                      </div>
+                    </div>
+                    {renderErrorAlert(directoryStatus.error)}
+                  </CardContent>
+                </Card>
+              </div>
             </TabsContent>
 
-            {/* Danger Zone Tab */}
+            {/* Danger Zone Tab (unchanged) */}
             <TabsContent value="danger" id="danger">
               <Card className="border-red-200 dark:border-red-900/50">
                 <CardHeader>
