@@ -69,7 +69,7 @@ export default function Recruitment() {
           number="03"
           title="COMPANY AMBASSADOR (CA)"
           icon={<Crown className="h-3 w-3 text-[#0b3264]" />}
-          variant="gold" // <-- different background for third card
+          variant="gold"
           reward={
             <>
               <span>₦300K</span>

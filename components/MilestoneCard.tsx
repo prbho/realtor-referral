@@ -6,7 +6,7 @@ interface Props {
   icon: ReactNode;
   children: ReactNode;
   reward?: ReactNode;
-  variant?: "default" | "gold" | "premium";
+  variant?: "default" | "gold" | "premium" | "homeCard";
 }
 
 export default function MilestoneCard({
@@ -19,7 +19,7 @@ export default function MilestoneCard({
 }: Props) {
   const themeClasses = {
     default: {
-      border: "border-slate-200/5",
+      border: "border-slate-200/70",
       cardBg: "bg-sky-100/5 hover:bg-white/10",
       iconBg: "bg-[#0b3264]/5 text-white",
       badgeBg: "bg-sky-emerald/10 text-emerald-300 border-emerald-400/20",
@@ -36,9 +36,23 @@ export default function MilestoneCard({
       iconBg: "bg-purple-500/10 text-purple-300",
       badgeBg: "bg-purple-500/10 text-purple-300 border-purple-400/20",
     },
+    homeCard: {
+      border: "border-sky-300/10",
+      cardBg: "bg-sky-100/5 hover:bg-white/10",
+      iconBg: "bg-[#0b3264]/5 text-white",
+      badgeBg: "bg-sky-emerald/10 text-emerald-300 border-emerald-400/20",
+    },
   };
 
-  const theme = themeClasses[variant];
+  // ✅ Fallback to default theme if variant is not recognised
+  const theme = themeClasses[variant] ?? themeClasses.default;
+
+  // Optional: warn in development when an unknown variant is used
+  if (process.env.NODE_ENV === "development" && !themeClasses[variant]) {
+    console.warn(
+      `[MilestoneCard] Unknown variant "${variant}". Falling back to "default".`
+    );
+  }
 
   return (
     <div

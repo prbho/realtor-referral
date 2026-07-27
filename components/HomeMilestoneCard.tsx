@@ -26,6 +26,7 @@ export default function HomeMilestone() {
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <MilestoneCard
           number="01"
+          variant="homeCard"
           title="TEAM MANAGER (TM)"
           icon={<Users className="h-4 w-4 text-sky-300" />}
           reward={
@@ -55,6 +56,7 @@ export default function HomeMilestone() {
         <MilestoneCard
           number="02"
           title="SENIOR TEAM BUILDER (STB)"
+          variant="homeCard"
           icon={<TrendingUp className="h-4 w-4 text-sky-300" />}
           reward={
             <>
