@@ -94,6 +94,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // ─── Referrer lookup with ninVerified check ──────────────
     const normalizedReferralCode =
       typeof referralCode === "string"
         ? referralCode.trim().toUpperCase()
@@ -105,15 +106,26 @@ export async function POST(request: NextRequest) {
             id: true,
             email: true,
             emailNotifications: true,
+            ninVerified: true, // ✅ required
           },
         })
       : null;
+
+    // ✅ Reject if referrer exists but NIN is not verified
+    if (referrer && !referrer.ninVerified) {
+      return NextResponse.json(
+        {
+          error:
+            "This referrer has not verified their NIN. The referral cannot be applied.",
+        },
+        { status: 400 }
+      );
+    }
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const userReferralCode = generateReferralCode(name);
     const token = crypto.randomBytes(32).toString("hex");
 
-    // Initialize newUserId
     let newUserId: string = "";
 
     await prisma.$transaction(async (transaction) => {
@@ -146,9 +158,8 @@ export async function POST(request: NextRequest) {
       });
     });
 
-    // ─── Create in‑app notifications ──────────────────────────
+    // ─── In‑app notifications ──────────────────────────────
 
-    // Welcome notification for the new user
     if (newUserId) {
       await createNotification(
         newUserId,
@@ -158,7 +169,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Referral notification for the referrer (if any)
     if (referrer) {
       await createNotification(
         referrer.id,
@@ -167,7 +177,6 @@ export async function POST(request: NextRequest) {
         `/realtors/${newUserId}`
       );
 
-      // Email notification (existing)
       if (referrer.emailNotifications) {
         void sendReferralNotificationEmail(referrer.email, name).catch(
           (error) => {

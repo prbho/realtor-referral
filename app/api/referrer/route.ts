@@ -24,7 +24,10 @@ export async function GET(request: NextRequest) {
 
   const referrer = await prisma.user.findUnique({
     where: { referralCode: code },
-    select: { name: true },
+    select: {
+      name: true,
+      ninVerified: true, // ✅ include
+    },
   });
 
   if (!referrer) {
@@ -34,5 +37,8 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  return NextResponse.json({ name: referrer.name });
+  return NextResponse.json({
+    name: referrer.name,
+    ninVerified: referrer.ninVerified,
+  });
 }

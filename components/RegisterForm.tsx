@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { isValidEmail, isValidPassword } from "@/lib/validation";
-import { Eye, EyeOff, Clock } from "lucide-react";
+import { Eye, EyeOff, Clock, TriangleAlert } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -27,10 +27,13 @@ export default function RegisterForm() {
   const [success, setSuccess] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [referrerName, setReferrerName] = useState<string | null>(null);
+  const [referrerNinVerified, setReferrerNinVerified] = useState<
+    boolean | null
+  >(null);
   const [referrerLoading, setReferrerLoading] = useState(!!referralCode);
   const [showPassword, setShowPassword] = useState(false);
 
-  // Registration pause state
+  // ─── Registration pause state ──────────────────────────────
   const [regPaused, setRegPaused] = useState(false);
   const [pauseReason, setPauseReason] = useState<string | null>(null);
   const [pauseUntil, setPauseUntil] = useState<string | null>(null);
@@ -40,7 +43,6 @@ export default function RegisterForm() {
     seconds: number;
   } | null>(null);
 
-  // Fetch registration status
   useEffect(() => {
     fetch("/api/auth/registration-status")
       .then((res) => res.json())
@@ -52,17 +54,12 @@ export default function RegisterForm() {
       .catch(() => {});
   }, []);
 
-  // Countdown timer
   useEffect(() => {
-    if (!regPaused || !pauseUntil) {
-      return;
-    }
-
+    if (!regPaused || !pauseUntil) return;
     const updateTimeLeft = () => {
       const now = Date.now();
       const target = new Date(pauseUntil).getTime();
       const diff = target - now;
-
       if (diff <= 0) {
         fetch("/api/auth/registration-status")
           .then((res) => res.json())
@@ -76,33 +73,36 @@ export default function RegisterForm() {
         setTimeLeft(null);
         return;
       }
-
       const hours = Math.floor(diff / (1000 * 60 * 60));
       const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
       const seconds = Math.floor((diff % (1000 * 60)) / 1000);
       setTimeLeft({ hours, minutes, seconds });
     };
-
     const intervalId = setInterval(updateTimeLeft, 1000);
     updateTimeLeft();
-
     return () => {
       clearInterval(intervalId);
       setTimeLeft(null);
     };
   }, [regPaused, pauseUntil]);
 
-  // Fetch referrer name
+  // ─── Fetch referrer name and ninVerified ────────────────────
   useEffect(() => {
     if (!referralCode) return;
     let cancelled = false;
     fetch(`/api/referrer?code=${encodeURIComponent(referralCode)}`)
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (!cancelled) setReferrerName(data?.name || null);
+        if (!cancelled) {
+          setReferrerName(data?.name || null);
+          setReferrerNinVerified(data?.ninVerified ?? false);
+        }
       })
       .catch(() => {
-        if (!cancelled) setReferrerName(null);
+        if (!cancelled) {
+          setReferrerName(null);
+          setReferrerNinVerified(false);
+        }
       })
       .finally(() => {
         if (!cancelled) setReferrerLoading(false);
@@ -116,6 +116,13 @@ export default function RegisterForm() {
     e.preventDefault();
     setError("");
     setSuccess("");
+
+    if (referralCode && referrerNinVerified === false) {
+      setError(
+        "This referrer has not verified their NIN. Registration cannot proceed with this referral."
+      );
+      return;
+    }
 
     if (regPaused) {
       setError("Registration is currently paused.");
@@ -165,8 +172,6 @@ export default function RegisterForm() {
           data.message ||
             "Account created! Please check your email to verify your account."
         );
-        // Optionally refresh the referrer name after successful registration
-        // but notifications are created server-side, so no client action needed.
       }
     } catch (err: unknown) {
       console.error("Registration error:", err);
@@ -176,7 +181,8 @@ export default function RegisterForm() {
     }
   };
 
-  const isButtonDisabled = isLoading || regPaused;
+  const isButtonDisabled =
+    isLoading || regPaused || (!!referralCode && referrerNinVerified === false);
 
   return (
     <Card className="w-full max-w-md mx-auto mt-10 bg-white dark:bg-[#161b22] border border-slate-200 dark:border-slate-700/50 shadow-sm rounded-xl transition-colors duration-300">
@@ -194,19 +200,42 @@ export default function RegisterForm() {
         </p>
 
         {referralCode && (
-          <div className="mt-2 text-sm text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-900/30 p-3 rounded-md transition-colors duration-200">
-            {referrerLoading
-              ? "Checking referral..."
-              : referrerName
-              ? `🎉 You were referred by ${referrerName}`
-              : "Referral code applied"}
+          <div
+            className={`mt-2 text-sm p-3 rounded-md transition-colors duration-200 ${
+              referrerLoading
+                ? "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400"
+                : referrerNinVerified === false
+                ? "bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800"
+                : "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300"
+            }`}
+          >
+            {referrerLoading ? (
+              <>Checking referral...</>
+            ) : referrerNinVerified === false ? (
+              <>
+                <div className="flex gap-1 items-center">
+                  <TriangleAlert className="w-4 h-4" />
+                  <h3 className="font-bold">Referral inactive.</h3>
+                </div>
+                <p>
+                  This referral link is currently inactive because the referrer
+                  hasn&apos;t verified their NIN yet.
+                </p>
+              </>
+            ) : referrerName ? (
+              <div className="">
+                🎉 You were referred by <strong>{referrerName}</strong>
+              </div>
+            ) : (
+              <>Referral code applied</>
+            )}
           </div>
         )}
       </CardHeader>
 
       <CardContent>
         {success ? (
-          <div className="text-sm text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-900/30 p-4 rounded-md transition-colors duration-200">
+          <div className="text-sm text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-900/30 p-4 rounded-md">
             {success}
           </div>
         ) : regPaused ? (
@@ -305,7 +334,7 @@ export default function RegisterForm() {
             </div>
 
             {error && (
-              <div className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 p-3 rounded-md transition-colors duration-200">
+              <div className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 p-3 rounded-md">
                 {error}
               </div>
             )}
