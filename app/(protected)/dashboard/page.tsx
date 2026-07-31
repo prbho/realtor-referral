@@ -296,7 +296,7 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      <div className="md:grid lg:items-stretch gap-y-6 lg:grid-cols-13 lg:gap-x-4">
+      <div className="md:grid lg:items-stretch gap-y-6 lg:grid-cols-14 lg:gap-x-4">
         <div className="lg:col-span-4">
           <RecruitmentLadder
             validRealtorCount={validRealtorReferrals}

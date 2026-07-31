@@ -50,7 +50,7 @@ export default function Leaderboard() {
   }, [period]);
 
   return (
-    <div className="col-span-3 flex flex-col bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 py-6 transition-colors duration-200 overflow-hidden">
+    <div className="col-span-4 flex flex-col bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 py-6 transition-colors duration-200 overflow-hidden">
       <div className="flex flex-col gap-2 mb-4">
         <div className="flex items-center gap-3 px-6">
           <Trophy className="h-6 w-6 text-amber-500" />
