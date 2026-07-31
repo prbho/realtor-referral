@@ -28,16 +28,17 @@ function LockedCard({
   onVerifyClick: () => void;
 }) {
   return (
-    <div className="relative overflow-hidden bg-amber-50 dark:bg-amber-950/20 border-2 border-dashed border-amber-300 dark:border-amber-800 rounded-xl p-6 text-center">
-      <Lock className="h-6 w-6 mx-auto mb-2 text-amber-600 dark:text-amber-400" />
-      <p className="text-amber-800 dark:text-amber-200 font-medium">
+    <div className="relative overflow-hidden bg-amber-50 dark:bg-amber-950/20 border-2 border-dashed border-amber-300 dark:border-amber-800 rounded-xl text-center">
+      <Lock className="h-6 w-6 mx-auto my-2 text-amber-600 dark:text-amber-400" />
+      <p className="text-amber-800 dark:text-amber-200 font-medium text-sm">
         {message}
       </p>
       <button
         onClick={onVerifyClick}
         className="inline-flex items-center gap-1 mt-3 text-sm font-medium text-amber-700 dark:text-amber-300 underline hover:no-underline"
       >
-        Verify NIN to unlock <ChevronRight className="h-3.5 w-3.5" />
+        Verify NIN to unlock your referral code{" "}
+        <ChevronRight className="h-3.5 w-3.5" />
       </button>
     </div>
   );
@@ -113,7 +114,7 @@ export default function DashboardStats({
           </div>
         ) : (
           <LockedCard
-            message="Complete NIN verification to unlock your referral code."
+            message="Complete NIN verification to unlock."
             onVerifyClick={() => setShowNinModal(true)}
           />
         )}
