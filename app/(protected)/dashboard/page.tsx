@@ -288,7 +288,7 @@ export default async function DashboardPage() {
             🔒 Verify your NIN to access your referral link and code.
           </p>
           <Link
-            href="/profile#nin"
+            href="/profile"
             className="inline-block mt-2 text-sm text-amber-700 dark:text-amber-300 underline hover:no-underline"
           >
             Go to Profile to verify →
