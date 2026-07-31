@@ -8,7 +8,7 @@ let tokenExpiry: number | null = null;
 
 async function getMonnifyToken(): Promise<string> {
   if (cachedToken && tokenExpiry && Date.now() < tokenExpiry) {
-    return cachedToken!;
+    return cachedToken; // ✅ cachedToken is truthy, so it's a string
   }
 
   const credentials = Buffer.from(
@@ -42,7 +42,9 @@ export async function verifyNin(
 ): Promise<{ verified: boolean; fullName?: string; error?: string }> {
   try {
     const token = await getMonnifyToken();
-    const response = await fetch(`${MONNIFY_BASE_URL}/api/v1/vas/nin-details`, {
+
+    const url = `${MONNIFY_BASE_URL}/api/v1/vas/nin-details`;
+    const response = await fetch(url, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -52,37 +54,43 @@ export async function verifyNin(
     });
 
     const data = await response.json();
+
     if (!response.ok) {
-      return {
-        verified: false,
-        error: data.responseMessage || `HTTP ${response.status}`,
-      };
+      const errorMsg =
+        data.responseMessage || data.message || `HTTP ${response.status}`;
+      return { verified: false, error: errorMsg };
     }
 
     if (data.requestSuccessful !== true || data.responseCode !== "0") {
-      return {
-        verified: false,
-        error: data.responseMessage || "Verification failed",
-      };
+      const errorMsg = data.responseMessage || "Verification failed";
+      return { verified: false, error: errorMsg };
     }
 
     const body = data.responseBody;
-    if (!body || typeof body.ninInformationMatch !== "boolean") {
-      return { verified: false, error: "Unexpected response format" };
-    }
 
-    if (!body.ninInformationMatch) {
+    if (!body || typeof body !== "object") {
       return {
         verified: false,
-        error: "NIN does not match our records. Please check and try again.",
+        error: "Unexpected response format from Monnify",
       };
     }
 
+    // The presence of a nin or firstName field indicates a successful match
+    if (!body.nin && !body.firstName) {
+      return { verified: false, error: "NIN not found or invalid" };
+    }
+
+    // ✅ Safe type‑guard to ensure fullName is always a string (or undefined)
     const fullName =
-      [body.firstName, body.lastName].filter(Boolean).join(" ") || undefined;
+      [body.firstName, body.middleName, body.lastName]
+        .filter(
+          (name): name is string => typeof name === "string" && name.length > 0
+        )
+        .join(" ") || undefined;
+
     return { verified: true, fullName };
   } catch (error) {
-    console.error("Monnify NIN verification failed", error);
+    console.error("[Monnify] Error:", error);
     return {
       verified: false,
       error: "Service unavailable. Please try again later.",

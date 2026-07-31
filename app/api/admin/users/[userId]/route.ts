@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from "next/server"; // ← NextRequest required
+import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
 
 export async function DELETE(
-  _request: NextRequest, //
+  _request: NextRequest,
   { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
@@ -24,12 +24,10 @@ export async function DELETE(
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Only admins or super admins can delete
     if (currentUser.role !== "ADMIN" && !currentUser.isSuperAdmin) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Prevent deleting yourself
     if (userId === session.user.id) {
       return NextResponse.json(
         { error: "You cannot delete your own account" },
@@ -37,17 +35,19 @@ export async function DELETE(
       );
     }
 
-    // Get target user to check if they are a super admin
+    // ─── Get target user with referrer info ──────────────────────
     const targetUser = await prisma.user.findUnique({
       where: { id: userId },
-      select: { isSuperAdmin: true },
+      select: {
+        isSuperAdmin: true,
+        referredBy: true, // referrer ID
+      },
     });
 
     if (!targetUser) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Prevent deleting a super admin (only they can delete themselves, but we already blocked self)
     if (targetUser.isSuperAdmin) {
       return NextResponse.json(
         { error: "Cannot delete a super admin" },
@@ -55,6 +55,17 @@ export async function DELETE(
       );
     }
 
+    // ─── Decrement referrer's referralCount if there is a referrer ──
+    if (targetUser.referredBy) {
+      await prisma.user.update({
+        where: { id: targetUser.referredBy },
+        data: {
+          referralCount: { decrement: 1 },
+        },
+      });
+    }
+
+    // ─── Delete the user ──────────────────────────────────────────
     await prisma.user.delete({
       where: { id: userId },
     });

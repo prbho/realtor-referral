@@ -37,6 +37,7 @@ export default async function ProfilePage() {
       emailNotifications: true,
       marketingEmails: true,
       ninVerified: true,
+      isSuperAdmin: true,
     },
   });
 

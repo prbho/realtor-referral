@@ -5,58 +5,19 @@ import { prisma } from "@/lib/prisma";
 import { getSystemSettings, getEmailsSentToday } from "@/lib/systemSettings";
 import Greeting from "@/components/Greeting";
 import Link from "next/link";
-import { UserRoundArrowLeft, AlertCircle, Zap, Share2 } from "lucide-react";
-import Image from "next/image";
+import { AlertCircle, Zap } from "lucide-react";
 import AdminOverview from "@/components/AdminOverview";
 import DashboardStats from "@/components/DashboardStats";
-import Recruitment from "@/components/Recruitment";
-import ShareButton from "@/components/ShareButton";
+import RecruitmentLadder from "@/components/RecruitmentLadder";
+import RankBanner from "@/components/RankBanner";
+import ReferralsList from "@/components/ReferralsList";
+import UserAvatar from "@/components/UserAvatar";
+import Leaderboard from "@/components/Leaderboard";
+import ReferralLinkCard from "@/components/ReferralLinkCard";
 
 export const metadata = {
   title: "Dashboard | Regal PDC Realtor",
 };
-
-// ─── UserAvatar ──────────────────────────────────────────────
-function UserAvatar({
-  src,
-  name,
-  size = 32,
-}: {
-  src: string | null;
-  name: string | null;
-  size?: number;
-}) {
-  const initials = name
-    ? name
-        .split(" ")
-        .map((p) => p[0])
-        .slice(0, 2)
-        .join("")
-        .toUpperCase()
-    : "?";
-
-  if (src) {
-    return (
-      <Image
-        src={src}
-        alt={name || "Avatar"}
-        width={size}
-        height={size}
-        className="inline-block rounded-full object-cover shrink-0"
-        unoptimized
-      />
-    );
-  }
-
-  return (
-    <div
-      style={{ width: size, height: size }}
-      className="inline-flex items-center justify-center rounded-full bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 text-xs font-semibold shrink-0"
-    >
-      {initials}
-    </div>
-  );
-}
 
 // ─── Required fields ──────────────────────────────────────────
 const REQUIRED_PROFILE_FIELDS = [
@@ -78,7 +39,13 @@ const hasProfileValue = (value: unknown) => {
   return Boolean(value);
 };
 
-// ─── Main Component ──────────────────────────────────────────
+// ─── Milestones configuration ──────────────────────────────
+const MILESTONES = [
+  { id: "tm", label: "Team Manager", target: 200 },
+  { id: "stb", label: "Senior Team Builder", target: 500 },
+  { id: "ca", label: "Company Ambassador", target: 1500 },
+];
+
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
   if (!session) redirect("/login");
@@ -109,7 +76,15 @@ export default async function DashboardPage() {
       commission: true,
       isSuperAdmin: true,
       referrals: {
-        select: { id: true, name: true, email: true, createdAt: true },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          createdAt: true,
+          image: true,
+          role: true,
+          ninVerified: true,
+        },
         orderBy: { createdAt: "desc" },
       },
     },
@@ -127,11 +102,34 @@ export default async function DashboardPage() {
   const sevenDaysAgo = new Date();
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-  // ─── Fetch system settings ──────────────────────────────────
   const systemSettings = await getSystemSettings();
   const emailsSentToday = await getEmailsSentToday();
 
-  // ─── Admin stats (only for admins) ──────────────────────────
+  const validRealtorReferrals = await prisma.user.count({
+    where: {
+      referredBy: user.id,
+      role: "REALTOR",
+    },
+  });
+
+  const achievedMilestones = MILESTONES.filter(
+    (m) => validRealtorReferrals >= m.target
+  );
+  const nextMilestone = MILESTONES.find(
+    (m) => validRealtorReferrals < m.target
+  );
+  const currentRankLabel =
+    achievedMilestones.length > 0
+      ? achievedMilestones[achievedMilestones.length - 1].label
+      : "Rookie Recruiter";
+  const heroTarget =
+    nextMilestone?.target ?? MILESTONES[MILESTONES.length - 1].target;
+  const heroProgress = Math.min(
+    100,
+    Math.round((validRealtorReferrals / heroTarget) * 100)
+  );
+  const isMaxRank = !nextMilestone;
+
   let platformStats = null;
   let registrationSettings = null;
 
@@ -162,7 +160,6 @@ export default async function DashboardPage() {
       emailsSentToday,
     };
 
-    // ─── Build registration settings ──────────────────────────
     let pausedByAdminName: string | null = null;
     if (
       systemSettings.registrationPaused &&
@@ -194,11 +191,19 @@ export default async function DashboardPage() {
     day: "numeric",
   });
 
+  // ─── Compute weekly referrals ──────────────────────────────
+  // (we already have sevenDaysAgo set above, but we need to compute from now)
+  const now = new Date();
+  const weekAgo = new Date(now);
+  weekAgo.setDate(weekAgo.getDate() - 7);
+  const weeklyReferrals = user.referrals.filter(
+    (ref) => new Date(ref.createdAt) >= weekAgo
+  ).length;
+
   return (
     <div className="space-y-8 relative">
       <div className="absolute inset-0 -z-10 bg-linear-to-b from-blue-50/30 to-white dark:from-slate-900/50 dark:to-slate-900" />
 
-      {/* ─── Header ─────────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <Greeting name={user.name} />
@@ -225,9 +230,8 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* ─── Incomplete profile alert ──────────────────────────── */}
       {isProfileIncomplete && (
-        <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 rounded-xl p-4 flex items-start gap-3 transition-colors duration-200">
+        <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 rounded-xl p-4 flex items-start gap-3">
           <div className="h-8 w-8 shrink-0 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center">
             <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
           </div>
@@ -250,7 +254,6 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      {/* ─── Platform Overview for admins ────────────────────── */}
       {isAdmin && platformStats && (
         <AdminOverview
           stats={platformStats}
@@ -258,74 +261,56 @@ export default async function DashboardPage() {
         />
       )}
 
-      {/* ─── Stats & Referral Link ───────────────────────────── */}
+      <RankBanner
+        currentRankLabel={currentRankLabel}
+        nextMilestone={nextMilestone}
+        validRealtorCount={validRealtorReferrals}
+        heroProgress={heroProgress}
+        isMaxRank={isMaxRank}
+      />
+
       <DashboardStats
         user={user}
         referralLink={referralLink}
         ninVerificationRequired={ninVerificationRequired}
+        weeklyReferrals={weeklyReferrals}
       />
-      <div className="flex flex-col-reverse md:flex-row gap-4 overflow-x-auto px-0 pb-2 md:grid md:grid-cols-5 md:gap-6 md:overflow-visible">
-        {/* ─── Referrals List ────────────────────────────────────── */}
-        <div className="col-span-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 transition-colors duration-200">
-          <div className="flex items-center gap-2 mb-4">
-            <UserRoundArrowLeft className="h-5 w-5 text-violet-600 dark:text-violet-400" />
-            <h2 className="font-semibold text-lg text-slate-900 dark:text-white">
-              Your Referrals
-            </h2>
-          </div>
 
-          {user.referrals.length === 0 ? (
-            <div className="bg-slate-50 dark:bg-slate-950/40 dark:border-slate-700 rounded-2xl p-8 text-center">
-              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-sky-100 text-sky-700 dark:bg-sky-900/50 dark:text-sky-300">
-                <Share2 className="h-6 w-6" />
-              </div>
-              <p className="text-base font-semibold text-slate-900 dark:text-white">
-                You haven&apos;t referred anyone yet.
-              </p>
-              <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">
-                {isVerified
-                  ? "Share your referral link above to get started."
-                  : "Verify your NIN to access your referral link and code."}
-              </p>
-              {isVerified ? (
-                <div className="mt-6 flex justify-center">
-                  <ShareButton url={referralLink} />
-                </div>
-              ) : null}
-            </div>
-          ) : (
-            <ul className="divide-y divide-slate-200 dark:divide-neutral-700">
-              {user.referrals.map(
-                (ref: {
-                  id: string;
-                  name: string | null;
-                  email: string;
-                  createdAt: Date;
-                }) => (
-                  <li key={ref.id} className="py-3 flex items-center gap-3">
-                    <UserAvatar src={user.image} name={ref.name} size={36} />
-                    <div className="min-w-0 flex-1">
-                      <p className="font-medium text-slate-900 dark:text-white truncate">
-                        {ref.name || "Unnamed"}
-                      </p>
-                      <p className="text-sm text-slate-500 dark:text-slate-400 truncate">
-                        {ref.email}
-                      </p>
-                    </div>
-                    <p className="text-xs text-slate-400 dark:text-slate-500 shrink-0">
-                      {new Date(ref.createdAt).toLocaleDateString()}
-                    </p>
-                  </li>
-                )
-              )}
-            </ul>
-          )}
+      {/* ─── Referral Link Card (placed here) ────────────────── */}
+      {isVerified ? (
+        <ReferralLinkCard
+          referralLink={referralLink}
+          showAnalyticsLink={true}
+        />
+      ) : (
+        <div className="bg-amber-50 dark:bg-amber-950/20 border-2 border-dashed border-amber-300 dark:border-amber-800 rounded-xl p-6 text-center">
+          <p className="text-amber-800 dark:text-amber-200 font-medium">
+            🔒 Verify your NIN to access your referral link and code.
+          </p>
+          <Link
+            href="/profile#nin"
+            className="inline-block mt-2 text-sm text-amber-700 dark:text-amber-300 underline hover:no-underline"
+          >
+            Go to Profile to verify →
+          </Link>
+        </div>
+      )}
+
+      <div className="md:grid lg:items-stretch gap-y-6 lg:grid-cols-13 lg:gap-x-4">
+        <div className="lg:col-span-4">
+          <RecruitmentLadder
+            validRealtorCount={validRealtorReferrals}
+            isVerified={isVerified}
+          />
         </div>
 
-        {/* ─── Recruitment Milestone ──────────────────────────── */}
-        <div className="col-span-2">
-          <Recruitment />
-        </div>
+        <ReferralsList
+          referrals={user.referrals}
+          isVerified={isVerified}
+          referralLink={referralLink}
+        />
+
+        <Leaderboard />
       </div>
     </div>
   );

@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import AdminUsersTable from "./AdminUsersTable";
 import { getCurrentUser, isAdmin } from "@/lib/currentUser";
+import AdminUsersTable from "@/components/admin/AdminUsersTable";
 
 export default async function AdminPage() {
   const currentUser = await getCurrentUser();

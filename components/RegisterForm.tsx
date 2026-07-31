@@ -52,11 +52,9 @@ export default function RegisterForm() {
       .catch(() => {});
   }, []);
 
-  // Countdown timer – fixed to avoid setState in effect body
+  // Countdown timer
   useEffect(() => {
-    // If no pause is active, clear any interval and reset timeLeft (handled by cleanup)
     if (!regPaused || !pauseUntil) {
-      // timeLeft will be set to null by cleanup if an interval was running
       return;
     }
 
@@ -66,7 +64,6 @@ export default function RegisterForm() {
       const diff = target - now;
 
       if (diff <= 0) {
-        // Pause expired – refresh status
         fetch("/api/auth/registration-status")
           .then((res) => res.json())
           .then((data) => {
@@ -87,17 +84,15 @@ export default function RegisterForm() {
     };
 
     const intervalId = setInterval(updateTimeLeft, 1000);
-    // Call immediately to set initial value
     updateTimeLeft();
 
     return () => {
       clearInterval(intervalId);
-      // Reset timeLeft when interval stops (pause ended or component unmounts)
       setTimeLeft(null);
     };
   }, [regPaused, pauseUntil]);
 
-  // Fetch referrer name (unchanged)
+  // Fetch referrer name
   useEffect(() => {
     if (!referralCode) return;
     let cancelled = false;
@@ -170,6 +165,8 @@ export default function RegisterForm() {
           data.message ||
             "Account created! Please check your email to verify your account."
         );
+        // Optionally refresh the referrer name after successful registration
+        // but notifications are created server-side, so no client action needed.
       }
     } catch (err: unknown) {
       console.error("Registration error:", err);

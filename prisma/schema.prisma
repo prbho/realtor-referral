@@ -7,18 +7,18 @@ datasource db {
 }
 
 model User {
-  id                 String    @id @default(cuid())
-  email              String    @unique
+  id                 String         @id @default(cuid())
+  email              String         @unique
   name               String?
   password           String?
   image              String?
-  role               Role      @default(USER)
-  referralCode       String?   @unique
+  role               Role           @default(USER)
+  referralCode       String?        @unique
   referredBy         String?
-  referralCount      Int       @default(0)
-  commission         Float     @default(0)
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
+  referralCount      Int            @default(0)
+  commission         Float          @default(0)
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
   emailVerified      DateTime?
   accountName        String?
   accountNumber      String?
@@ -31,17 +31,18 @@ model User {
   state              String?
   streetAddress      String?
   zipCode            String?
-  emailNotifications Boolean   @default(true)
-  marketingEmails    Boolean   @default(true)
-  hideFromDirectory  Boolean   @default(false)
-  themePreference    String?   @default("system")
-  nin                String?   @unique
-  isSuperAdmin       Boolean   @default(false)
-  ninVerified        Boolean   @default(false)
+  emailNotifications Boolean        @default(true)
+  marketingEmails    Boolean        @default(true)
+  hideFromDirectory  Boolean        @default(false)
+  themePreference    String?        @default("system")
+  nin                String?        @unique
+  isSuperAdmin       Boolean        @default(false)
+  ninVerified        Boolean        @default(false)
   accounts           Account[]
   sessions           Session[]
-  referrer           User?     @relation("Referrals", fields: [referredBy], references: [id])
-  referrals          User[]    @relation("Referrals")
+  notifications      Notification[]
+  referrer           User?          @relation("Referrals", fields: [referredBy], references: [id])
+  referrals          User[]         @relation("Referrals")
 }
 
 model Account {
@@ -87,16 +88,29 @@ model VerificationToken {
 }
 
 model SystemSettings {
-  id                      String   @id @default("singleton")
-  emailLimitEnabled       Boolean  @default(true)
-  emailDailyLimit         Int      @default(100)
-  updatedAt               DateTime @updatedAt
-  ninVerificationRequired Boolean  @default(true)
-  registrationPaused      Boolean  @default(false)      
-  registrationPauseReason String?  @db.Text            
-  registrationPauseUntil  DateTime?  
-  registrationPausedBy   String?  
-  registrationPausedAt   DateTime? 
+  id                      String    @id @default("singleton")
+  emailLimitEnabled       Boolean   @default(true)
+  emailDailyLimit         Int       @default(100)
+  updatedAt               DateTime  @updatedAt
+  ninVerificationRequired Boolean   @default(true)
+  registrationPaused      Boolean   @default(false)
+  registrationPauseReason String?   @db.Text
+  registrationPauseUntil  DateTime?
+  registrationPausedBy    String?
+  registrationPausedAt    DateTime?
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String // "referral", "realtor", "milestone", "commission"
+  message   String
+  link      String? // URL to navigate to
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
 }
 
 model EmailLog {

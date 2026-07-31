@@ -60,6 +60,7 @@ type UserData = {
   accountName: string | null;
   accountNumber: string | null;
   bankName: string | null;
+  isSuperAdmin: boolean;
 };
 
 type FormStatus = {
@@ -97,10 +98,11 @@ const COUNTRY_OPTIONS = (() => {
   return ["Nigeria", ...countries];
 })();
 
+// ─── Steps: NIN first ──────────────────────────────────────────
 const STEPS = [
+  { id: "identification", label: "ID Verification", icon: IdCard },
   { id: "personal", label: "Personal", icon: User },
   { id: "address", label: "Address", icon: MapPin },
-  { id: "identification", label: "Identification", icon: IdCard },
   { id: "banking", label: "Banking", icon: Landmark },
 ] as const;
 
@@ -132,7 +134,7 @@ export default function ProfileForm({ user }: { user: UserData }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const getStepFromHash = (hash: string): number => {
-    if (hash === "#nin" || hash === "#identification") return 2;
+    if (hash === "#nin" || hash === "#identification") return 0;
     return 0;
   };
 
@@ -161,7 +163,6 @@ export default function ProfileForm({ user }: { user: UserData }) {
     error: "",
   });
 
-  // ─── Initial form values ────────────────────────────────────
   const buildFormData = (u: UserData): FormData => ({
     name: u.name || "",
     email: u.email,
@@ -184,15 +185,11 @@ export default function ProfileForm({ user }: { user: UserData }) {
   );
   const [formData, setFormData] = useState<FormData>(() => buildFormData(user));
 
-  // Track previous user to avoid unnecessary updates
   const prevUserRef = useRef(user);
 
-  // Sync internal state when user prop changes (e.g., after profile update)
   useEffect(() => {
-    // Only update if the user object actually changed
     if (prevUserRef.current !== user) {
       const newValues = buildFormData(user);
-      // Compare with current initialFormValues to avoid infinite loop
       const hasChanged = Object.keys(newValues).some(
         (key) =>
           newValues[key as keyof FormData] !==
@@ -230,6 +227,16 @@ export default function ProfileForm({ user }: { user: UserData }) {
       return;
     }
 
+    // ✅ Check if the NIN has unsaved changes
+    if (hasUnsavedChanges("nin")) {
+      setStepStatus({
+        loading: false,
+        saved: false,
+        error: "Please save your NIN first before verifying.",
+      });
+      return;
+    }
+
     setIsVerifying(true);
     setStepStatus({ loading: false, saved: false, error: "" });
 
@@ -248,7 +255,13 @@ export default function ProfileForm({ user }: { user: UserData }) {
           error: data.error || "Verification failed. Please try again.",
         });
       } else {
+        // Auto‑populate name from Monnify
+        if (data.fullName) {
+          setFormData((prev) => ({ ...prev, name: data.fullName }));
+        }
         setNinVerified(true);
+        // Update initial values so the NIN save button disappears
+        setInitialFormValues((prev) => ({ ...prev, nin: formData.nin }));
         setStepStatus({
           loading: false,
           saved: true,
@@ -379,6 +392,7 @@ export default function ProfileForm({ user }: { user: UserData }) {
     icon,
     list,
     datalistOptions,
+    disabled = false,
   }: {
     field: keyof FormData;
     label: React.ReactNode;
@@ -392,9 +406,10 @@ export default function ProfileForm({ user }: { user: UserData }) {
     icon?: React.ReactNode;
     list?: string;
     datalistOptions?: readonly string[];
+    disabled?: boolean;
   }) => {
     const status = fieldStatus[field];
-    const showSaveButton = hasUnsavedChanges(field);
+    const showSaveButton = !disabled && hasUnsavedChanges(field);
 
     return (
       <div className="space-y-2">
@@ -418,6 +433,7 @@ export default function ProfileForm({ user }: { user: UserData }) {
             autoComplete={autoComplete}
             list={list}
             className="pr-10"
+            disabled={disabled}
           />
           {list && datalistOptions?.length ? (
             <datalist id={list}>
@@ -426,23 +442,26 @@ export default function ProfileForm({ user }: { user: UserData }) {
               ))}
             </datalist>
           ) : null}
-          {showSaveButton ? (
+          {showSaveButton && (
             <Button
               type="button"
               variant="ghost"
               size="icon-xs"
               onClick={() => handleFieldSave(field, value)}
               disabled={status?.loading}
-              className="absolute right-1.5 top-1/2 border border-stone-200 cursor-pointer -translate-y-1/2 text-emerald-600 hover:text-emerald-700 dark:text-emerald-400"
+              className="absolute w-fit p-1 right-1.5 top-1/2 shrink-0 border border-stone-200 cursor-pointer -translate-y-1/2 text-emerald-600 hover:text-emerald-700 dark:text-emerald-400"
               title="Save this field"
             >
               {status?.loading ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
               ) : (
-                <Check className="h-3.5 w-3.5" />
+                <div className="flex gap-1 items-center">
+                  <Check className="h-3.5 w-3.5" />
+                  <span>Save</span>
+                </div>
               )}
             </Button>
-          ) : null}
+          )}
         </div>
         {status?.error ? (
           <p className="text-xs text-red-600 dark:text-red-400">
@@ -534,14 +553,17 @@ export default function ProfileForm({ user }: { user: UserData }) {
   // ─── Navigation ──────────────────────────────────────────────
   const validateStep = (step: number): string | null => {
     if (step === 0) {
+      if (!user.isSuperAdmin) {
+        if (!formData.nin.trim())
+          return "National Identification Number (NIN) is required";
+        if (!isValidNIN(formData.nin)) return "NIN must be exactly 11 digits";
+        if (!ninVerified) return "Please verify your NIN before proceeding.";
+      }
+    }
+    if (step === 1) {
       if (!formData.name.trim()) return "Full name is required";
       if (!isValidEmail(formData.email))
         return "Please enter a valid email address";
-    }
-    if (step === 2) {
-      if (!formData.nin.trim())
-        return "National Identification Number (NIN) is required";
-      if (!isValidNIN(formData.nin)) return "NIN must be exactly 11 digits";
     }
     if (step === 3) {
       if (!formData.accountName.trim())
@@ -616,6 +638,7 @@ export default function ProfileForm({ user }: { user: UserData }) {
     }
   };
 
+  // ─── Render ──────────────────────────────────────────────────
   return (
     <div className="flex min-h-screen">
       <div className="flex-1 overflow-auto">
@@ -624,7 +647,7 @@ export default function ProfileForm({ user }: { user: UserData }) {
             Profile Settings
           </h1>
 
-          {/* Profile photo */}
+          {/* Profile photo (unchanged) */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -761,7 +784,91 @@ export default function ProfileForm({ user }: { user: UserData }) {
 
           <form onSubmit={handleFinalSubmit}>
             <Card>
+              {/* ─── Step 0: Identification ──────────────────────── */}
               {currentStep === 0 && (
+                <>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <IdCard className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                      Identity Verification
+                    </CardTitle>
+                    <CardDescription>
+                      Verify your identity with your NIN. This unlocks referral
+                      features and auto‑fills your profile.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {/* ✅ NIN field with Save button inside */}
+                    {renderFieldWithSave({
+                      field: "nin",
+                      label: "National Identification Number (NIN) *",
+                      value: formData.nin,
+                      placeholder: "12345678901",
+                      inputMode: "numeric",
+                      maxLength: 11,
+                      required: true,
+                      disabled: ninVerified && !user.isSuperAdmin,
+                    })}
+
+                    {/* ✅ "Verify NIN" button – only appears if NIN is saved and not verified */}
+                    {formData.nin.trim() &&
+                      !ninVerified &&
+                      !hasUnsavedChanges("nin") && (
+                        <div className="flex justify-end">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={handleVerifyNin}
+                            disabled={isVerifying}
+                          >
+                            {isVerifying ? (
+                              <>
+                                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                Verifying...
+                              </>
+                            ) : (
+                              "Verify NIN"
+                            )}
+                          </Button>
+                        </div>
+                      )}
+
+                    {/* ✅ Verified status */}
+                    {ninVerified && (
+                      <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
+                        <Check className="h-4 w-4" />
+                        <span className="text-sm font-medium">
+                          NIN verified successfully
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Info note for super admin */}
+                    {user.isSuperAdmin && (
+                      <p className="text-xs text-blue-600 dark:text-blue-400">
+                        ℹ️ As a super admin, you can skip NIN verification or
+                        leave it blank.
+                      </p>
+                    )}
+
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      Your 11-digit NIN. Once verified, your name will be
+                      auto‑filled and locked.
+                    </p>
+
+                    {!ninVerified &&
+                      formData.nin.trim() &&
+                      fieldStatus.nin?.saved && (
+                        <p className="text-xs text-amber-600 dark:text-amber-400">
+                          Please verify your NIN to continue.
+                        </p>
+                      )}
+                  </CardContent>
+                </>
+              )}
+
+              {/* ─── Step 1: Personal ────────────────────────────── */}
+              {currentStep === 1 && (
                 <>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
@@ -769,7 +876,8 @@ export default function ProfileForm({ user }: { user: UserData }) {
                       Personal Information
                     </CardTitle>
                     <CardDescription>
-                      Your name and how we can reach you.
+                      Your name and contact details. Name is auto‑filled from
+                      your verified NIN.
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
@@ -779,6 +887,7 @@ export default function ProfileForm({ user }: { user: UserData }) {
                       value: formData.name,
                       placeholder: "John Doe",
                       required: true,
+                      disabled: ninVerified && !user.isSuperAdmin,
                     })}
 
                     <div className="space-y-2">
@@ -819,7 +928,8 @@ export default function ProfileForm({ user }: { user: UserData }) {
                 </>
               )}
 
-              {currentStep === 1 && (
+              {/* ─── Step 2: Address ────────────────────────────── */}
+              {currentStep === 2 && (
                 <>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
@@ -893,7 +1003,7 @@ export default function ProfileForm({ user }: { user: UserData }) {
                               ))}
                             </SelectContent>
                           </Select>
-                          {hasUnsavedChanges("country") ? (
+                          {hasUnsavedChanges("country") && (
                             <Button
                               type="button"
                               variant="ghost"
@@ -911,7 +1021,7 @@ export default function ProfileForm({ user }: { user: UserData }) {
                                 <Check className="h-3.5 w-3.5" />
                               )}
                             </Button>
-                          ) : null}
+                          )}
                         </div>
                         {fieldStatus.country?.error ? (
                           <p className="text-xs text-red-600 dark:text-red-400">
@@ -928,96 +1038,7 @@ export default function ProfileForm({ user }: { user: UserData }) {
                 </>
               )}
 
-              {currentStep === 2 && (
-                <>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <IdCard className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-                      Identification
-                    </CardTitle>
-                    <CardDescription>
-                      Required for identity verification and commission payouts.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between gap-2">
-                        <Label htmlFor="nin">
-                          National Identification Number (NIN) *
-                        </Label>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon-xs"
-                          onClick={() => handleFieldSave("nin", formData.nin)}
-                          disabled={fieldStatus.nin?.loading}
-                          className="text-emerald-600 hover:text-emerald-700 dark:text-emerald-400"
-                          title="Save this field"
-                        >
-                          {fieldStatus.nin?.loading ? (
-                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                          ) : (
-                            <Check className="h-3.5 w-3.5" />
-                          )}
-                        </Button>
-                      </div>
-                      <div className="flex items-end gap-3">
-                        <div className="flex-1">
-                          <Input
-                            id="nin"
-                            name="nin"
-                            value={formData.nin}
-                            onChange={handleChange}
-                            placeholder="12345678901"
-                            inputMode="numeric"
-                            maxLength={11}
-                            required
-                          />
-                        </div>
-                        {formData.nin.trim() && !ninVerified && (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={handleVerifyNin}
-                            disabled={isVerifying}
-                            className="shrink-0"
-                          >
-                            {isVerifying ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              "Verify NIN"
-                            )}
-                          </Button>
-                        )}
-                        {ninVerified && (
-                          <span className="shrink-0 flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
-                            <Check className="h-4 w-4" /> Verified
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
-                        Your 11-digit NIN. This is kept private and used only
-                        for identity verification.
-                      </p>
-                      {!ninVerified && formData.nin.trim() && (
-                        <p className="text-xs text-amber-600 dark:text-amber-400">
-                          Please verify your NIN to access referral features.
-                        </p>
-                      )}
-                      {fieldStatus.nin?.error ? (
-                        <p className="text-xs text-red-600 dark:text-red-400">
-                          {fieldStatus.nin.error}
-                        </p>
-                      ) : fieldStatus.nin?.saved ? (
-                        <p className="text-xs text-emerald-600 dark:text-emerald-400">
-                          Saved
-                        </p>
-                      ) : null}
-                    </div>
-                  </CardContent>
-                </>
-              )}
-
+              {/* ─── Step 3: Banking ────────────────────────────── */}
               {currentStep === 3 && (
                 <>
                   <CardHeader>
@@ -1070,6 +1091,7 @@ export default function ProfileForm({ user }: { user: UserData }) {
                 </>
               )}
 
+              {/* ─── Footer ───────────────────────────────────────── */}
               <CardContent className="pt-0 space-y-4">
                 {renderErrorAlert(stepStatus.error)}
                 {renderSuccessAlert(stepStatus.saved)}

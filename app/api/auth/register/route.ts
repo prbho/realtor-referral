@@ -13,6 +13,7 @@ import {
   assertEmailCapacityAvailable,
   getSystemSettings,
 } from "@/lib/systemSettings";
+import { createNotification } from "@/lib/notifications";
 
 export async function POST(request: NextRequest) {
   try {
@@ -112,8 +113,11 @@ export async function POST(request: NextRequest) {
     const userReferralCode = generateReferralCode(name);
     const token = crypto.randomBytes(32).toString("hex");
 
+    // Initialize newUserId
+    let newUserId: string = "";
+
     await prisma.$transaction(async (transaction) => {
-      await transaction.user.create({
+      const newUser = await transaction.user.create({
         data: {
           name,
           email,
@@ -122,7 +126,9 @@ export async function POST(request: NextRequest) {
           referralCode: userReferralCode,
           referredBy: referrer?.id ?? null,
         },
+        select: { id: true },
       });
+      newUserId = newUser.id;
 
       if (referrer) {
         await transaction.user.update({
@@ -140,12 +146,35 @@ export async function POST(request: NextRequest) {
       });
     });
 
-    if (referrer?.emailNotifications) {
-      void sendReferralNotificationEmail(referrer.email, name).catch(
-        (error) => {
-          console.error("Referral notification email failed", error);
-        }
+    // ─── Create in‑app notifications ──────────────────────────
+
+    // Welcome notification for the new user
+    if (newUserId) {
+      await createNotification(
+        newUserId,
+        "referral",
+        `Welcome to Regal PDC! Complete your profile to start earning commissions.`,
+        "/profile"
       );
+    }
+
+    // Referral notification for the referrer (if any)
+    if (referrer) {
+      await createNotification(
+        referrer.id,
+        "referral",
+        `🎉 ${name} joined using your referral link!`,
+        `/realtors/${newUserId}`
+      );
+
+      // Email notification (existing)
+      if (referrer.emailNotifications) {
+        void sendReferralNotificationEmail(referrer.email, name).catch(
+          (error) => {
+            console.error("Referral notification email failed", error);
+          }
+        );
+      }
     }
 
     try {
@@ -172,9 +201,6 @@ export async function POST(request: NextRequest) {
     );
   } catch (error) {
     console.error("Registration error:", error);
-    return NextResponse.json(
-      { error: "Registration failed" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Registration failed" }, { status: 500 });
   }
 }

@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
 import { verifyNin } from "@/lib/monnify";
+import { createNotification } from "@/lib/notifications";
 
 export async function POST(request: NextRequest) {
   try {
@@ -18,10 +19,24 @@ export async function POST(request: NextRequest) {
 
     const cleanNin = nin.trim();
 
-    // 1. Get user with nin and role
+    // ✅ Validate NIN format (11 digits)
+    if (!/^\d{11}$/.test(cleanNin)) {
+      return NextResponse.json(
+        { error: "NIN must be exactly 11 digits" },
+        { status: 400 }
+      );
+    }
+
+    // 1. Get user with nin, role, and referrer
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { nin: true, role: true, isSuperAdmin: true },
+      select: {
+        nin: true,
+        role: true,
+        isSuperAdmin: true,
+        name: true,
+        referredBy: true,
+      },
     });
 
     if (!user) {
@@ -42,12 +57,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error:
-            "The NIN you entered does not match your profile's NIN. Please update your profile first.",
+            "The NIN you entered does not match your profile's NIN. Please update your NIN to match.",
         },
         { status: 400 }
       );
     }
 
+    // 2. Call Monnify
     const result = await verifyNin(cleanNin);
 
     if (!result.verified) {
@@ -57,23 +73,55 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: errorMsg }, { status: 400 });
     }
 
-    // 2. Prepare update data
+    // 3. Prepare update data
     const updateData: { ninVerified: boolean; role?: "REALTOR" } = {
       ninVerified: true,
     };
 
-    // Only upgrade role if user is currently a regular USER (not ADMIN or already REALTOR)
-    // Super admins should not be demoted or changed.
-    if (!user.isSuperAdmin && user.role === "USER") {
+    const wasPromoted = !user.isSuperAdmin && user.role === "USER";
+    if (wasPromoted) {
       updateData.role = "REALTOR";
     }
 
-    // 3. Update user
+    // 4. Update user
     const updatedUser = await prisma.user.update({
       where: { id: session.user.id },
       data: updateData,
       select: { id: true, role: true, ninVerified: true },
     });
+
+    // ─── Create notifications ──────────────────────────────
+
+    // 4a. Notify the user
+    const userMessage = wasPromoted
+      ? "🎉 Your NIN has been verified and you are now a Realtor!"
+      : "✅ Your NIN has been successfully verified.";
+    await createNotification(
+      session.user.id,
+      "milestone",
+      userMessage,
+      "/profile"
+    );
+
+    // 4b. Notify the referrer (if exists)
+    if (user.referredBy) {
+      const referrer = await prisma.user.findUnique({
+        where: { id: user.referredBy },
+        select: { emailNotifications: true },
+      });
+
+      if (referrer?.emailNotifications !== false) {
+        const referrerMessage = wasPromoted
+          ? `🏅 ${user.name || "Your referral"} has become a Realtor!`
+          : `📋 ${user.name || "Your referral"} has verified their NIN.`;
+        await createNotification(
+          user.referredBy,
+          "realtor",
+          referrerMessage,
+          `/realtors/${session.user.id}`
+        );
+      }
+    }
 
     return NextResponse.json({
       success: true,

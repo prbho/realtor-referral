@@ -1,59 +1,55 @@
 "use client";
 
+import { Share2 } from "lucide-react";
 import { useState } from "react";
-import { Share2, Check } from "lucide-react";
 
 interface ShareButtonProps {
   url: string;
+  title?: string;
+  text?: string;
 }
 
-export default function ShareButton({ url }: ShareButtonProps) {
-  const [shared, setShared] = useState(false);
+export default function ShareButton({
+  url,
+  title = "Join Regal PDC",
+  text = "Become a Realtor and earn commissions!",
+}: ShareButtonProps) {
+  const [copied, setCopied] = useState(false);
 
   const handleShare = async () => {
-    try {
-      if (navigator.share) {
+    // Use Web Share API if available (mobile / desktop)
+    if (navigator.share) {
+      try {
         await navigator.share({
-          title: "Join Regal PDC Realtor",
-          text: "Hi! 👋 Your real estate journey starts here. Join the Regal PDC Realtor Network and gain access to opportunities, training, and a community dedicated to your success.",
+          title,
+          text,
           url,
         });
-      } else {
-        await navigator.clipboard.writeText(url);
+        return;
+      } catch (err) {
+        // User cancelled or share failed, fallback to copy
+        console.warn("Share cancelled or failed:", err);
       }
-      setShared(true);
-      setTimeout(() => setShared(false), 2000);
-    } catch (error) {
-      console.error("Unable to share referral link:", error);
+    }
+
+    // Fallback: copy to clipboard
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      alert("Copy the link: " + url);
     }
   };
 
   return (
     <button
       onClick={handleShare}
-      className={`flex shrink-0 items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${
-        shared
-          ? "bg-emerald-600 text-white"
-          : "bg-slate-900 text-white hover:bg-slate-800 dark:bg-slate-900 dark:hover:bg-slate-800"
-      }`}
+      className="inline-flex items-center justify-center rounded-md border border-slate-300 dark:border-neutral-600 bg-white dark:bg-neutral-700 px-3 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-neutral-600 transition-colors duration-200"
+      aria-label="Share referral link"
     >
-      <span className="relative flex h-4 w-4 items-center justify-center">
-        <Share2
-          className={`absolute h-4 w-4 transition-all duration-200 ${
-            shared
-              ? "opacity-0 scale-50 rotate-12"
-              : "opacity-100 scale-100 rotate-0"
-          }`}
-        />
-        <Check
-          className={`absolute h-4 w-4 transition-all duration-200 ${
-            shared
-              ? "opacity-100 scale-100 rotate-0"
-              : "opacity-0 scale-50 -rotate-12"
-          }`}
-        />
-      </span>
-      <span className="min-w-10 text-left">{shared ? "Shared!" : "Share"}</span>
+      <Share2 className="mr-2 h-4 w-4" />
+      {copied ? "Copied!" : "Share"}
     </button>
   );
 }

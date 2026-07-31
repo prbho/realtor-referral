@@ -6,6 +6,7 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://realtor.regalpdc.com"),
+  manifest: "/manifest.json",
 
   title: {
     default: "Regal PDC Realtor",
@@ -56,14 +57,12 @@ export const metadata: Metadata = {
     siteName: "Regal PDC Realtor",
     locale: "en_US",
     type: "website",
-
   },
 
   twitter: {
     card: "summary_large_image",
     title: "Regal PDC Realtor",
     description: "Nigeria's modern real estate agent referral platform.",
-
   },
 
   alternates: {
