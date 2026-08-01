@@ -21,6 +21,7 @@ export default async function AdminPage() {
       name: true,
       image: true,
       nin: true,
+      ninVerified: true,
       email: true,
       role: true,
       referralCode: true,

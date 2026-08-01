@@ -39,6 +39,8 @@ export default function AdminUsersTable({
     search,
     setSearch,
     roleFilter,
+    ninVerifiedFilter,
+    setNinVerifiedFilter,
     setRoleFilter,
     pageSize,
     setPageSize,
@@ -129,6 +131,8 @@ export default function AdminUsersTable({
           setSearch={setSearch}
           roleFilter={roleFilter}
           setRoleFilter={setRoleFilter}
+          ninVerifiedFilter={ninVerifiedFilter}
+          setNinVerifiedFilter={setNinVerifiedFilter}
           pageSize={pageSize}
           setPageSize={setPageSize}
           selectedCount={selectedIds.size}

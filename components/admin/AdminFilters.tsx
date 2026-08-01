@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Trash, Download } from "lucide-react";
+import { Trash, Download, CheckCircle2 } from "lucide-react";
 
 type Role = "USER" | "REALTOR" | "ADMIN";
 
@@ -20,6 +20,8 @@ interface AdminFiltersProps {
   setSearch: (val: string) => void;
   roleFilter: "ALL" | Role;
   setRoleFilter: (val: "ALL" | Role) => void;
+  ninVerifiedFilter: "ALL" | "VERIFIED" | "UNVERIFIED"; // ✅ new
+  setNinVerifiedFilter: (val: "ALL" | "VERIFIED" | "UNVERIFIED") => void; // ✅ new
   pageSize: number;
   setPageSize: (val: number) => void;
   selectedCount: number;
@@ -35,12 +37,19 @@ const roleFilterItems = [
   { label: "Realtor", value: "REALTOR" },
   { label: "Admin", value: "ADMIN" },
 ];
+const ninFilterItems = [
+  { label: "All", value: "ALL" },
+  { label: "Verified", value: "VERIFIED" },
+  { label: "Not Verified", value: "UNVERIFIED" },
+];
 
 export default function AdminFilters({
   search,
   setSearch,
   roleFilter,
   setRoleFilter,
+  ninVerifiedFilter,
+  setNinVerifiedFilter,
   pageSize,
   setPageSize,
   selectedCount,
@@ -50,24 +59,24 @@ export default function AdminFilters({
 }: AdminFiltersProps) {
   return (
     <>
-      <div className="flex flex-col sm:flex-row gap-3 mb-4">
+      <div className="flex flex-col sm:flex-row gap-3 mb-4 flex-wrap">
         <Input
           type="text"
           placeholder="Search by name, email, or referral code..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="flex-1 p-2 border border-gray-300 dark:border-neutral-700 rounded-md bg-white dark:bg-slate-800 text-neutral-800 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+          className="flex-1 min-w-[180px] p-2 border border-gray-300 dark:border-neutral-700 rounded-md bg-white dark:bg-slate-800 text-neutral-800 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
         />
         <Select
           value={roleFilter}
           onValueChange={(value) => setRoleFilter(value as "ALL" | Role)}
         >
-          <SelectTrigger className="w-full sm:max-w-48">
-            <SelectValue />
+          <SelectTrigger className="w-full sm:max-w-40">
+            <SelectValue placeholder="Role" />
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>
-              <SelectLabel>Roles</SelectLabel>
+              <SelectLabel>Role</SelectLabel>
               {roleFilterItems.map((item) => (
                 <SelectItem key={item.value} value={item.value}>
                   {item.label}
@@ -76,12 +85,39 @@ export default function AdminFilters({
             </SelectGroup>
           </SelectContent>
         </Select>
+
+        <Select
+          value={ninVerifiedFilter}
+          onValueChange={(value) =>
+            setNinVerifiedFilter(value as "ALL" | "VERIFIED" | "UNVERIFIED")
+          }
+        >
+          <SelectTrigger className="w-full sm:max-w-40">
+            <SelectValue placeholder="NIN Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectLabel>NIN Verification</SelectLabel>
+              {ninFilterItems.map((item) => (
+                <SelectItem key={item.value} value={item.value}>
+                  <div className="flex items-center gap-2">
+                    {item.value === "VERIFIED" && (
+                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                    )}
+                    {item.label}
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+
         <Select
           value={String(pageSize)}
           onValueChange={(value) => setPageSize(Number(value))}
         >
           <SelectTrigger className="w-full sm:max-w-36">
-            <SelectValue />
+            <SelectValue placeholder="Rows" />
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>

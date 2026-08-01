@@ -87,6 +87,26 @@ export default function AdminTable({
             const isSaving = savingRoleFor === user.id;
             const isSelected = selectedIds.has(user.id);
 
+            // ─── NIN status icon ──────────────────────────────
+            let ninIcon;
+            let ninTitle = "No NIN saved";
+            if (user.ninVerified) {
+              ninIcon = (
+                <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+              );
+              ninTitle = "NIN verified";
+            } else if (user.nin) {
+              ninIcon = (
+                <CheckCircle2 className="h-4 w-4 text-gray-400 dark:text-gray-500" />
+              );
+              ninTitle = "NIN saved but not verified";
+            } else {
+              ninIcon = (
+                <XCircle className="h-4 w-4 text-gray-300 dark:text-gray-600" />
+              );
+              ninTitle = "No NIN";
+            }
+
             return (
               <TableRow
                 key={user.id}
@@ -105,10 +125,13 @@ export default function AdminTable({
                     <UserAvatar src={user.image} name={user.name} />
                     <button
                       onClick={() => onOpenProfile(user)}
-                      className="font-medium capitalize text-neutral-800 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 hover:underline truncate"
+                      className="font-medium capitalize max-w-50 whitespace-nowrap text-neutral-800 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 hover:underline truncate"
                       title={user.name || ""}
                     >
-                      {user.name || "—"}
+                      <span className="truncate block">
+                        {" "}
+                        {user.name || "—"}
+                      </span>
                     </button>
                   </div>
                 </TableCell>
@@ -118,11 +141,9 @@ export default function AdminTable({
                   </span>
                 </TableCell>
                 <TableCell className="px-4 py-3">
-                  {user.nin ? (
-                    <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                  ) : (
-                    <XCircle className="h-4 w-4 text-gray-300 dark:text-gray-600" />
-                  )}
+                  <div className="flex items-center" title={ninTitle}>
+                    {ninIcon}
+                  </div>
                 </TableCell>
                 <TableCell className="px-4 py-3">
                   <div className="flex flex-col gap-1">

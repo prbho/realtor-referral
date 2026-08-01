@@ -33,6 +33,7 @@ export type UserRow = {
   bankName: string | null;
   referrals: Referral[];
   nin: string | null;
+  ninVerified: boolean;
   referredBy: { name: string; id: string } | null;
 };
 

@@ -25,6 +25,10 @@ interface UseAdminUsersReturn {
   setSearch: React.Dispatch<React.SetStateAction<string>>;
   roleFilter: "ALL" | Role;
   setRoleFilter: React.Dispatch<React.SetStateAction<"ALL" | Role>>;
+  ninVerifiedFilter: "ALL" | "VERIFIED" | "UNVERIFIED";
+  setNinVerifiedFilter: React.Dispatch<
+    React.SetStateAction<"ALL" | "VERIFIED" | "UNVERIFIED">
+  >;
   pageSize: number;
   setPageSize: React.Dispatch<React.SetStateAction<number>>;
   currentPage: number;
@@ -99,6 +103,9 @@ export function useAdminUsers(
   const [usersState, setUsersState] = useState<UserRow[]>(initialUsers);
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<"ALL" | Role>("ALL");
+  const [ninVerifiedFilter, setNinVerifiedFilter] = useState<
+    "ALL" | "VERIFIED" | "UNVERIFIED"
+  >("ALL");
   const [pageSize, setPageSize] = useState<number>(20);
   const [currentPage, setCurrentPage] = useState(1);
   const [mobileVisibleCount, setMobileVisibleCount] = useState(20);
@@ -377,11 +384,18 @@ export function useAdminUsers(
         u.email.toLowerCase().includes(q) ||
         u.referralCode?.toLowerCase().includes(q);
       const matchesRole = roleFilter === "ALL" || u.role === roleFilter;
-      return matchesSearch && matchesRole;
+      // ✅ NIN verification filter
+      let matchesNin = true;
+      if (ninVerifiedFilter === "VERIFIED") {
+        matchesNin = u.ninVerified === true;
+      } else if (ninVerifiedFilter === "UNVERIFIED") {
+        matchesNin = u.ninVerified === false;
+      }
+      return matchesSearch && matchesRole && matchesNin;
     });
-  }, [usersState, search, roleFilter]);
+  }, [usersState, search, roleFilter, ninVerifiedFilter]);
 
-  const filterKey = `${search}|${roleFilter}|${pageSize}`;
+  const filterKey = `${search}|${roleFilter}|${pageSize}|${ninVerifiedFilter}`;
   const prevFilterKeyRef = useRef(filterKey);
   useEffect(() => {
     if (filterKey !== prevFilterKeyRef.current) {
@@ -501,6 +515,8 @@ export function useAdminUsers(
     setSearch,
     roleFilter,
     setRoleFilter,
+    ninVerifiedFilter,
+    setNinVerifiedFilter,
     pageSize,
     setPageSize,
     currentPage,
