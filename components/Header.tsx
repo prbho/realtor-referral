@@ -4,6 +4,15 @@ import { useState, useRef, useEffect } from "react";
 import { useSession, signOut } from "next-auth/react";
 import Link from "next/link";
 import Image from "next/image";
+import {
+  Home,
+  User,
+  Settings,
+  ShieldCheck,
+  FileText,
+  Mail,
+  CalendarCheck,
+} from "lucide-react";
 import NotificationBell from "./NotificationBell";
 import UserAvatar from "./UserAvatar";
 
@@ -81,32 +90,65 @@ export default function Header() {
                     <Link
                       href="/dashboard"
                       onClick={() => setIsOpen(false)}
-                      className="block px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700/50 transition-colors duration-200"
+                      className="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700/50 transition-colors duration-200"
                     >
+                      <Home className="h-4 w-4" />
                       Dashboard
                     </Link>
                     <Link
                       href="/profile"
                       onClick={() => setIsOpen(false)}
-                      className="block px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700/50 transition-colors duration-200"
+                      className="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700/50 transition-colors duration-200"
                     >
+                      <User className="h-4 w-4" />
                       Profile
                     </Link>
                     <Link
                       href="/settings"
                       onClick={() => setIsOpen(false)}
-                      className="block px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700/50 transition-colors duration-200"
+                      className="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700/50 transition-colors duration-200"
                     >
+                      <Settings className="h-4 w-4" />
                       Settings
                     </Link>
                     {userRole === "ADMIN" && (
-                      <Link
-                        href="/admin"
-                        onClick={() => setIsOpen(false)}
-                        className="block px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700/50 transition-colors duration-200"
-                      >
-                        Admin
-                      </Link>
+                      <div className="border-t border-gray-200/50 dark:border-slate-700/50 mt-1 pt-2">
+                        <p className="px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                          Admin
+                        </p>
+                        <Link
+                          href="/admin"
+                          onClick={() => setIsOpen(false)}
+                          className="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700/50 transition-colors duration-200"
+                        >
+                          <ShieldCheck className="h-4 w-4" />
+                          Dashboard
+                        </Link>
+                        <Link
+                          href="/admin/audit"
+                          onClick={() => setIsOpen(false)}
+                          className="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700/50 transition-colors duration-200"
+                        >
+                          <FileText className="h-4 w-4" />
+                          Audit Logs
+                        </Link>
+                        <Link
+                          href="/admin/email-templates"
+                          onClick={() => setIsOpen(false)}
+                          className="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700/50 transition-colors duration-200"
+                        >
+                          <Mail className="h-4 w-4" />
+                          Email Templates
+                        </Link>
+                        <Link
+                          href="/admin/schedule-email"
+                          onClick={() => setIsOpen(false)}
+                          className="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700/50 transition-colors duration-200"
+                        >
+                          <CalendarCheck className="h-4 w-4" />
+                          Schedule Email
+                        </Link>
+                      </div>
                     )}
 
                     <div className="border-t border-gray-200/50 dark:border-slate-700/50 mt-1 pt-1">

@@ -48,6 +48,7 @@ export async function GET(request: NextRequest) {
         email: user.email,
         image: user.image,
         referralCount: count,
+        allTimeReferralCount: user.referralCount,
       };
     });
 

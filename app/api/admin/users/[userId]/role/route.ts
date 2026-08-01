@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
+import { logAction } from "@/lib/auditLog";
 
 const VALID_ROLES = ["USER", "REALTOR", "ADMIN"] as const;
 
@@ -74,6 +75,9 @@ export async function PATCH(
       );
     }
 
+    // Store previous role for audit
+    const previousRole = targetUser.role;
+
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: { role },
@@ -85,6 +89,20 @@ export async function PATCH(
         isSuperAdmin: true,
       },
     });
+
+    // ─── Audit Log ──────────────────────────────────────────────
+    await logAction(
+      session.user.id,
+      "ROLE_CHANGE",
+      {
+        targetUserId: userId,
+        targetEmail: updatedUser.email,
+        previousRole,
+        newRole: role,
+      },
+      request.headers.get("x-forwarded-for") ?? undefined,
+      request.headers.get("user-agent") ?? undefined
+    );
 
     return NextResponse.json({
       success: true,

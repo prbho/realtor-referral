@@ -89,6 +89,7 @@ interface UseAdminUsersReturn {
     totalUsers: number;
     totalReferrals: number;
     totalCommission: number;
+    ninVerifiedCount: number;
   };
   addressLine: (u: UserRow) => string | null;
   getPrintContent: (user: UserRow) => React.ReactElement;
@@ -430,6 +431,7 @@ export function useAdminUsers(
       totalUsers: usersState.length,
       totalReferrals: usersState.reduce((sum, u) => sum + u.referralCount, 0),
       totalCommission: usersState.reduce((sum, u) => sum + u.commission, 0),
+      ninVerifiedCount: usersState.filter((u) => u.ninVerified).length,
     }),
     [usersState]
   );

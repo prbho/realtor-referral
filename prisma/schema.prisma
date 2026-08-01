@@ -41,6 +41,7 @@ model User {
   accounts           Account[]
   sessions           Session[]
   notifications      Notification[]
+  auditLogs          AuditLog[] // ✅ added
   referrer           User?          @relation("Referrals", fields: [referredBy], references: [id])
   referrals          User[]         @relation("Referrals")
 }
@@ -111,6 +112,46 @@ model Notification {
   createdAt DateTime @default(now())
 
   @@index([userId, createdAt])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String // who performed the action
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  action    String // e.g. "ROLE_CHANGE", "DELETE_USER", "BULK_DELETE", "SETTINGS_UPDATE"
+  details   Json // additional context (e.g., { oldRole: "USER", newRole: "REALTOR" })
+  ip        String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([action, createdAt])
+}
+
+model EmailTemplate {
+  id              String           @id @default(cuid())
+  name            String           @unique // "welcome", "milestone", "referral", "custom"
+  subject         String
+  body            String           @db.Text // HTML content
+  variables       String[] // list of required variables
+  scheduledEmails ScheduledEmail[]
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+}
+
+model ScheduledEmail {
+  id          String         @id @default(cuid())
+  templateId  String?
+  template    EmailTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  subject     String
+  body        String         @db.Text
+  recipients  String[] // array of user IDs
+  scheduledAt DateTime
+  sentAt      DateTime?
+  status      String         @default("pending") // pending, sent, failed
+  createdAt   DateTime       @default(now())
+
+  @@index([scheduledAt, status])
 }
 
 model EmailLog {

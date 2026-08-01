@@ -108,27 +108,48 @@ export default function RecruitmentLadder({
     );
   }
 
+  const remaining = nextMilestone
+    ? Math.max(0, nextMilestone.target - validRealtorCount)
+    : 0;
+
   return (
     <>
       <div className="bg-white border border-slate-200 dark:border-slate-700 dark:bg-slate-800 rounded-xl p-6 transition-colors duration-200">
-        <div className="flex items-center gap-2 mb-1">
-          <Crown className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-          <h2 className="font-semibold text-lg text-slate-900 dark:text-white">
-            Rank Ladder
-          </h2>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between mb-5">
+          <div>
+            <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 mb-1">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-linear-to-br from-amber-100 to-amber-100/5">
+                <Crown className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+              </div>
+              <div>
+                <h2 className="text-sm font-semibold text-slate-900 dark:text-white">
+                  Rank Ladder
+                </h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Progress toward your next rank
+                </p>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-400 dark:text-slate-400">
+              {nextMilestone
+                ? `Only ${remaining} more Realtor${
+                    remaining === 1 ? "" : "s"
+                  } to ${nextMilestone.label}.`
+                : "You’ve reached the top rank!"}
+            </p>
+          </div>
+
+          {/* <div className="rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300">
+            {validRealtorCount} valid Realtor
+            {validRealtorCount === 1 ? "" : "s"}
+          </div> */}
         </div>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
-          You have recruited{" "}
-          <span className="font-bold text-slate-900 dark:text-white">
-            {validRealtorCount}
-          </span>{" "}
-          valid Realtors.
-        </p>
 
-        <div className="relative pl-2">
-          <div className="absolute left-6 h-[70%] top-6 bottom-6 w-0.5 bg-slate-200 dark:bg-slate-700" />
+        <div className="relative pl-3">
+          <div className="absolute left-7.5 h-[70%] top-8 bottom-6 w-px bg-slate-200 dark:bg-slate-700" />
 
-          <div className="space-y-6">
+          <div className="space-y-5">
             {MILESTONES.map((milestone) => {
               const progress = Math.min(
                 100,
@@ -140,28 +161,22 @@ export default function RecruitmentLadder({
               const style = TIER_STYLES[milestone.variant];
 
               return (
-                <div key={milestone.id} className="relative flex gap-4">
-                  <div
-                    className={`relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
-                      isCurrentFocus
-                        ? `ring-4 ring-offset-2 ring-offset-white dark:ring-offset-slate-800 ${style.glow}`
-                        : ""
-                    }`}
-                    style={{
-                      backgroundImage: achieved
-                        ? `conic-gradient(${style.ring} 360deg, ${style.ring} 0deg)`
-                        : `conic-gradient(${style.ring} ${
-                            progress * 3.6
-                          }deg, #e2e8f0 0deg)`,
-                      backgroundColor: "transparent",
-                    }}
-                  >
-                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-white dark:bg-slate-800">
-                      <span
-                        className={achieved ? style.text : "text-slate-400"}
-                      >
-                        {milestone.icon}
-                      </span>
+                <div key={milestone.id} className="flex items-start gap-4">
+                  <div className="relative z-10">
+                    <div
+                      className={`flex h-9 w-9 items-center justify-center rounded-full border ${
+                        isCurrentFocus
+                          ? `border-slate-300 shadow-lg ${style.glow}`
+                          : "border-slate-200 dark:border-slate-700"
+                      } bg-white dark:bg-slate-800`}
+                    >
+                      <div className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-50 dark:bg-slate-900 text-sm">
+                        <span
+                          className={achieved ? style.text : "text-slate-400"}
+                        >
+                          {milestone.icon}
+                        </span>
+                      </div>
                     </div>
                   </div>
 
@@ -175,14 +190,14 @@ export default function RecruitmentLadder({
                       infoButton={
                         <button
                           onClick={() => openModal(milestone.id)}
-                          className="text-slate-400 cursor-pointer hover:text-blue-600 dark:text-slate-500 dark:hover:text-slate-300 transition-colors"
+                          className="text-slate-400 hover:text-blue-600 dark:text-slate-500 dark:hover:text-slate-300 transition-colors"
                           aria-label={`Learn more about ${milestone.label}`}
                         >
                           <Info className="h-4 w-4" />
                         </button>
                       }
                     >
-                      <div className="space-y-1.5">
+                      <div className="space-y-2">
                         <div className="flex items-center justify-between text-xs">
                           <span className="text-slate-600 dark:text-slate-300">
                             {validRealtorCount} / {milestone.target}
@@ -203,7 +218,8 @@ export default function RecruitmentLadder({
                             </span>
                           )}
                         </div>
-                        <div className="h-2 w-full rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+
+                        <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
                           <div
                             className={`h-full transition-all duration-500 bg-linear-to-r ${
                               achieved
@@ -223,8 +239,7 @@ export default function RecruitmentLadder({
         </div>
       </div>
 
-      {/* ─── Info Modal ──────────────────────────────────────── */}
-      {isModalOpen && selectedData && (
+      {isModalOpen && selectedData ? (
         <ModalShell isVisible={isModalOpen} onClose={closeModal}>
           <div className="flex items-baseline justify-between px-6 py-4 border-b border-gray-200 dark:border-neutral-700">
             <div>
@@ -233,7 +248,7 @@ export default function RecruitmentLadder({
                 {selectedData.label} Benefits
               </h2>
               <p className="text-sm text-slate-500 dark:text-slate-400">
-                Recruit {selectedData.target} Realtors to unlock this rank
+                Recruit {selectedData.target} Realtors to unlock this rank.
               </p>
             </div>
             <button
@@ -243,6 +258,7 @@ export default function RecruitmentLadder({
               <X className="h-5 w-5" />
             </button>
           </div>
+
           <div className="px-6 py-4 space-y-3">
             {benefits.length > 0 ? (
               <ul className="space-y-2">
@@ -265,7 +281,7 @@ export default function RecruitmentLadder({
             )}
           </div>
         </ModalShell>
-      )}
+      ) : null}
     </>
   );
 }

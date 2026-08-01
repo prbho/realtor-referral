@@ -108,22 +108,51 @@ export default function AdminUsersTable({
           isDeleting ? "pointer-events-none" : ""
         }`}
       >
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold text-neutral-800 dark:text-white">
-            Admin — Users
-          </h1>
-          <a
-            href="/admin/settings"
-            className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
-          >
-            System Settings →
-          </a>
+        <div className="flex flex-col gap-3 mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-bold text-neutral-800 dark:text-white">
+                Admin — Users
+              </h1>
+              <p className="mt-2 text-sm text-gray-600 dark:text-gray-400 max-w-2xl">
+                Manage platform users and access quick admin tools.
+              </p>
+            </div>
+            <a
+              href="/admin/settings"
+              className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+            >
+              System Settings →
+            </a>
+          </div>
+
+          {/* <div className="grid gap-3 sm:grid-cols-3">
+            <Link
+              href="/admin/audit"
+              className="rounded-xl border border-gray-200 dark:border-neutral-700 bg-white dark:bg-slate-800 px-4 py-3 text-sm font-medium text-slate-700 dark:text-slate-200 transition hover:border-blue-500 hover:text-blue-600 dark:hover:border-blue-400 dark:hover:text-blue-300"
+            >
+              Audit Logs
+            </Link>
+            <Link
+              href="/admin/email-templates"
+              className="rounded-xl border border-gray-200 dark:border-neutral-700 bg-white dark:bg-slate-800 px-4 py-3 text-sm font-medium text-slate-700 dark:text-slate-200 transition hover:border-blue-500 hover:text-blue-600 dark:hover:border-blue-400 dark:hover:text-blue-300"
+            >
+              Email Templates
+            </Link>
+            <Link
+              href="/admin/schedule-email"
+              className="rounded-xl border border-gray-200 dark:border-neutral-700 bg-white dark:bg-slate-800 px-4 py-3 text-sm font-medium text-slate-700 dark:text-slate-200 transition hover:border-blue-500 hover:text-blue-600 dark:hover:border-blue-400 dark:hover:text-blue-300"
+            >
+              Schedule Email
+            </Link>
+          </div> */}
         </div>
 
         <AdminStats
           totalUsers={totals.totalUsers}
           totalReferrals={totals.totalReferrals}
           totalCommission={totals.totalCommission}
+          ninVerifiedCount={totals.ninVerifiedCount}
         />
 
         <AdminFilters
@@ -239,7 +268,7 @@ export default function AdminUsersTable({
       />
 
       {isDeleting && (
-        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-[100] backdrop-blur-sm">
+        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-100 backdrop-blur-sm">
           <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-xl flex flex-col items-center gap-4">
             <Loader2 className="h-10 w-10 animate-spin text-blue-600 dark:text-blue-400" />
             <p className="text-neutral-800 dark:text-white font-medium">

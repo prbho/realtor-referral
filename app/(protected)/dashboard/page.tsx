@@ -9,6 +9,8 @@ import { AlertCircle, Zap } from "lucide-react";
 import AdminOverview from "@/components/AdminOverview";
 import DashboardStats from "@/components/DashboardStats";
 import RecruitmentLadder from "@/components/RecruitmentLadder";
+import { getRankBadges, getSuperAdminPreviewBadges } from "@/lib/rankBadges";
+import RankAchievementModal from "@/components/RankAchievementModal";
 import RankBanner from "@/components/RankBanner";
 import ReferralsList from "@/components/ReferralsList";
 import UserAvatar from "@/components/UserAvatar";
@@ -130,6 +132,11 @@ export default async function DashboardPage() {
   );
   const isMaxRank = !nextMilestone;
 
+  const rankBadges = getRankBadges(validRealtorReferrals);
+  const devSuperAdminBadges = getSuperAdminPreviewBadges(user.isSuperAdmin);
+  const displayRankBadges =
+    devSuperAdminBadges.length > 0 ? devSuperAdminBadges : rankBadges;
+
   let platformStats = null;
   let registrationSettings = null;
 
@@ -182,7 +189,8 @@ export default async function DashboardPage() {
 
   const referralLink = `${process.env.NEXTAUTH_URL}/register?ref=${user.referralCode}`;
   const ninVerificationRequired = systemSettings.ninVerificationRequired;
-  const isVerified = ninVerificationRequired ? user.ninVerified : true;
+  const isVerified =
+    user.isSuperAdmin || (ninVerificationRequired ? user.ninVerified : true);
 
   const today = new Date().toLocaleDateString(undefined, {
     weekday: "long",
@@ -202,7 +210,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-8 relative">
-      <div className="absolute inset-0 -z-10 bg-linear-to-b from-blue-50/30 to-white dark:from-slate-900/50 dark:to-slate-900" />
+      <RankAchievementModal currentRankLabel={currentRankLabel} />
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -215,17 +223,31 @@ export default async function DashboardPage() {
             {today}
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <span className="text-xs font-medium px-3 py-1.5 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-neutral-700 text-neutral-600 dark:text-gray-300">
-            {user.isSuperAdmin ? (
-              <span className="flex items-center gap-1">
-                <Zap className="h-3.5 w-3.5" />
-                SuperAdmin
-              </span>
-            ) : (
-              user.role
-            )}
-          </span>
+        <div className="flex items-center gap-3 flex-row-reverse sm:flex-row justify-between">
+          <div className="flex flex-col gap-2 items-end">
+            <div className="text-xs font-medium px-3 py-1 rounded-2xl w-fit bg-white dark:bg-slate-800 border border-slate-200 dark:border-neutral-700 text-neutral-600 dark:text-gray-300">
+              {user.isSuperAdmin ? (
+                <span className="flex items-center gap-1">
+                  <Zap className="h-3.5 w-3.5" />
+                  SuperAdmin
+                </span>
+              ) : (
+                user.role
+              )}
+            </div>
+            <div className="flex flex-wrap gap-2 items-center">
+              {displayRankBadges.map((badge) => (
+                <span
+                  key={badge.label}
+                  title={badge.label}
+                  aria-label={badge.label}
+                  className="inline-flex items-center justify-center text-lg font-semibold uppercase rounded-sm bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300"
+                >
+                  {badge.icon}
+                </span>
+              ))}
+            </div>
+          </div>
           <UserAvatar src={user.image} name={user.name} size={40} />
         </div>
       </div>

@@ -13,6 +13,7 @@ interface DashboardStatsProps {
     referralCode: string | null;
     ninVerified: boolean;
     nin: string | null;
+    isSuperAdmin: boolean;
   };
   referralLink: string;
   ninVerificationRequired: boolean;
@@ -35,7 +36,7 @@ function LockedCard({
       </p>
       <button
         onClick={onVerifyClick}
-        className="inline-flex items-center gap-1 mt-3 text-sm font-medium text-amber-700 dark:text-amber-300 underline hover:no-underline"
+        className="inline-flex items-center gap-1 mt-1 text-sm font-medium text-amber-700 dark:text-amber-300 underline hover:no-underline"
       >
         Verify NIN to unlock your referral code{" "}
         <ChevronRight className="h-3.5 w-3.5" />
@@ -54,7 +55,8 @@ export default function DashboardStats({
   const [showNinModal, setShowNinModal] = useState(false);
   const [ninVerified, setNinVerified] = useState(user.ninVerified || false);
 
-  const isVerified = ninVerificationRequired ? ninVerified : true;
+  const isVerified =
+    user.isSuperAdmin || (ninVerificationRequired ? ninVerified : true);
 
   const handleVerified = () => {
     setNinVerified(true);

@@ -63,19 +63,24 @@ export default function ReferralsList({
       {/* ─── Header ────────────────────────────────────────── */}
       <div className="flex items-center justify-between mb-1 shrink-0">
         <div className="flex items-center gap-2">
-          <Contact className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-          <h2 className="font-semibold text-lg text-slate-900 dark:text-white">
-            Your Referral Team
-          </h2>
-
-          <></>
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-linear-to-br from-sky-100 to-sky-100/5">
+            <Contact className="h-6 w-6 text-sky-600 dark:text-sky-400" />
+          </div>
+          <div className="flex flex-col">
+            <h2 className="text-sm font-semibold text-slate-900 dark:text-white">
+              Your Referral
+            </h2>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+              Team Members
+            </p>
+          </div>
         </div>
         <span className="text-xs font-medium px-2 py-1 rounded-full bg-violet-50 dark:bg-violet-950/30 text-violet-600 dark:text-violet-400">
           {referrals.length} total
         </span>
       </div>
-      <div className="flex items-center gap-3 text-sm text-slate-500 dark:text-slate-400 shrink-0">
-        <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 shrink-0">
+      <div className="flex items-center mb-6 gap-3 text-sm text-slate-500 dark:text-slate-400 shrink-0">
+        <p className="text-sm text-slate-400 dark:text-slate-400">
           Grow your network, earn commissions, and unlock milestones.
         </p>
       </div>
