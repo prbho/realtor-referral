@@ -16,7 +16,7 @@ const nextConfig: NextConfig = {
   async headers() {
     const scriptSrc =
       process.env.NODE_ENV === "production"
-        ? "'self'"
+        ? "'self' 'unsafe-inline' https://static.cloudflareinsights.com"
         : "'self' 'unsafe-inline' 'unsafe-eval'";
 
     return [
@@ -25,7 +25,7 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: "Content-Security-Policy",
-            value: `default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'; object-src 'none'; script-src ${scriptSrc}; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.supabase.co; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co; upgrade-insecure-requests`,
+            value: `default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'; object-src 'none'; script-src ${scriptSrc}; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.supabase.co; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co https://static.cloudflareinsights.com; upgrade-insecure-requests`,
           },
           {
             key: "Permissions-Policy",
