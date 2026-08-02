@@ -1,6 +1,7 @@
 // components/admin/AdminFilters.tsx
 "use client";
 
+import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -22,11 +23,23 @@ interface AdminFiltersProps {
   setRoleFilter: (val: "ALL" | Role) => void;
   ninVerifiedFilter: "ALL" | "VERIFIED" | "UNVERIFIED"; // ✅ new
   setNinVerifiedFilter: (val: "ALL" | "VERIFIED" | "UNVERIFIED") => void; // ✅ new
+  topReferralFilter: "ALL" | "TOP_5" | "TOP_10" | "TOP_25";
+  setTopReferralFilter: (val: "ALL" | "TOP_5" | "TOP_10" | "TOP_25") => void;
   pageSize: number;
   setPageSize: (val: number) => void;
   selectedCount: number;
   onBulkDelete: () => void;
-  onBulkExport: () => void;
+  onBulkExport: (
+    mode:
+      | "selected"
+      | "all"
+      | "with-nin"
+      | "without-nin"
+      | "realtors"
+      | "users"
+      | "top-referrals",
+    format: "csv" | "xlsx"
+  ) => void;
   onClearSelection: () => void;
 }
 
@@ -56,7 +69,10 @@ export default function AdminFilters({
   onBulkDelete,
   onBulkExport,
   onClearSelection,
+  topReferralFilter,
+  setTopReferralFilter,
 }: AdminFiltersProps) {
+  const [exportFormat, setExportFormat] = useState<"csv" | "xlsx">("csv");
   return (
     <>
       <div className="flex flex-col sm:flex-row gap-3 mb-4 flex-wrap">
@@ -65,7 +81,7 @@ export default function AdminFilters({
           placeholder="Search by name, email, or referral code..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="flex-1 min-w-[180px] p-2 border border-gray-300 dark:border-neutral-700 rounded-md bg-white dark:bg-slate-800 text-neutral-800 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+          className="flex-1 min-w-45 p-2 border border-gray-300 dark:border-neutral-700 rounded-md bg-white dark:bg-slate-800 text-neutral-800 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
         />
         <Select
           value={roleFilter}
@@ -113,6 +129,26 @@ export default function AdminFilters({
         </Select>
 
         <Select
+          value={topReferralFilter}
+          onValueChange={(value) =>
+            setTopReferralFilter(value as "ALL" | "TOP_5" | "TOP_10" | "TOP_25")
+          }
+        >
+          <SelectTrigger className="w-full sm:max-w-40">
+            <SelectValue placeholder="Top referrals" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectLabel>Top Referrals</SelectLabel>
+              <SelectItem value="ALL">All users</SelectItem>
+              <SelectItem value="TOP_5">Top 5</SelectItem>
+              <SelectItem value="TOP_10">Top 10</SelectItem>
+              <SelectItem value="TOP_25">Top 25</SelectItem>
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+
+        <Select
           value={String(pageSize)}
           onValueChange={(value) => setPageSize(Number(value))}
         >
@@ -132,6 +168,72 @@ export default function AdminFilters({
         </Select>
       </div>
 
+      <div className="flex flex-wrap gap-2 mb-4 items-center">
+        <Select
+          value={exportFormat}
+          onValueChange={(value) => setExportFormat(value as "csv" | "xlsx")}
+        >
+          <SelectTrigger className="w-full sm:max-w-40">
+            <SelectValue placeholder="Export format" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectLabel>Format</SelectLabel>
+              <SelectItem value="csv">CSV</SelectItem>
+              <SelectItem value="xlsx">XLSX</SelectItem>
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+
+        <button
+          type="button"
+          onClick={() => onBulkExport("all", exportFormat)}
+          className="inline-flex items-center gap-2 rounded-md border border-gray-300 dark:border-neutral-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 hover:border-blue-500 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
+        >
+          <Download className="h-4 w-4" /> Export All
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onBulkExport("with-nin", exportFormat)}
+          className="inline-flex items-center gap-2 rounded-md border border-gray-300 dark:border-neutral-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 hover:border-blue-500 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
+        >
+          <Download className="h-4 w-4" /> With NIN
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onBulkExport("without-nin", exportFormat)}
+          className="inline-flex items-center gap-2 rounded-md border border-gray-300 dark:border-neutral-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 hover:border-blue-500 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
+        >
+          <Download className="h-4 w-4" /> Without NIN
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onBulkExport("realtors", exportFormat)}
+          className="inline-flex items-center gap-2 rounded-md border border-gray-300 dark:border-neutral-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 hover:border-blue-500 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
+        >
+          <Download className="h-4 w-4" /> Realtors Only
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onBulkExport("users", exportFormat)}
+          className="inline-flex items-center gap-2 rounded-md border border-gray-300 dark:border-neutral-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 hover:border-blue-500 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
+        >
+          <Download className="h-4 w-4" /> Users Only
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onBulkExport("top-referrals", exportFormat)}
+          className="inline-flex items-center gap-2 rounded-md border border-gray-300 dark:border-neutral-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 hover:border-blue-500 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
+        >
+          <Download className="h-4 w-4" /> Top referrals
+        </button>
+      </div>
+
       {selectedCount > 0 && (
         <div className="flex items-center gap-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-3 mb-4 shadow-sm">
           <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
@@ -145,7 +247,7 @@ export default function AdminFilters({
             <Trash className="h-4 w-4" /> Delete
           </button>
           <button
-            onClick={onBulkExport}
+            onClick={() => onBulkExport("selected")}
             className="flex items-center gap-1.5 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors"
           >
             <Download className="h-4 w-4" /> Export CSV

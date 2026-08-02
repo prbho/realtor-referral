@@ -6,6 +6,7 @@ import React, {
   useRef,
   useCallback,
 } from "react";
+import * as XLSX from "xlsx";
 import { UserRow } from "@/types/user";
 
 type Role = "USER" | "REALTOR" | "ADMIN";
@@ -28,6 +29,10 @@ interface UseAdminUsersReturn {
   ninVerifiedFilter: "ALL" | "VERIFIED" | "UNVERIFIED";
   setNinVerifiedFilter: React.Dispatch<
     React.SetStateAction<"ALL" | "VERIFIED" | "UNVERIFIED">
+  >;
+  topReferralFilter: "ALL" | "TOP_5" | "TOP_10" | "TOP_25";
+  setTopReferralFilter: React.Dispatch<
+    React.SetStateAction<"ALL" | "TOP_5" | "TOP_10" | "TOP_25">
   >;
   pageSize: number;
   setPageSize: React.Dispatch<React.SetStateAction<number>>;
@@ -79,7 +84,10 @@ interface UseAdminUsersReturn {
   clearSelection: () => void;
   handleBulkDelete: () => void;
   confirmBulkDelete: () => Promise<void>;
-  handleBulkExport: () => void;
+  handleBulkExport: (
+    mode: "selected" | "all" | "with-nin" | "without-nin",
+    format: "csv" | "xlsx"
+  ) => void;
   requestDeleteUser: (user: UserRow) => void;
   confirmDeleteUser: () => Promise<void>;
   goToPreviousPage: () => void;
@@ -106,6 +114,9 @@ export function useAdminUsers(
   const [roleFilter, setRoleFilter] = useState<"ALL" | Role>("ALL");
   const [ninVerifiedFilter, setNinVerifiedFilter] = useState<
     "ALL" | "VERIFIED" | "UNVERIFIED"
+  >("ALL");
+  const [topReferralFilter, setTopReferralFilter] = useState<
+    "ALL" | "TOP_5" | "TOP_10" | "TOP_25"
   >("ALL");
   const [pageSize, setPageSize] = useState<number>(20);
   const [currentPage, setCurrentPage] = useState(1);
@@ -296,10 +307,12 @@ export function useAdminUsers(
     }
   };
 
-  const handleBulkExport = () => {
-    const ids = Array.from(selectedIds);
-    if (ids.length === 0) return;
-    const selectedUsers = usersState.filter((u) => ids.includes(u.id));
+  const escapeCsvValue = (value: string | number | null | undefined) => {
+    const text = value == null ? "" : String(value);
+    return `"${text.replace(/"/g, '""')}"`;
+  };
+
+  const buildCsv = (users: UserRow[]) => {
     const headers = [
       "Name",
       "Email",
@@ -316,33 +329,136 @@ export function useAdminUsers(
       "Bank Name",
       "Account Number",
     ];
-    const rows = selectedUsers.map((u) => [
+
+    const rows = users.map((u) => [
       u.name || "",
       u.email,
       u.role,
       u.referralCount,
       u.commission.toFixed(2),
       formatShortDate(u.createdAt),
-      u.phone || "",
+      maskSensitiveValue(u.phone, isViewerSuperAdmin),
       u.city || "",
       u.state || "",
       u.country || "",
-      u.nin || "",
+      maskSensitiveValue(u.nin, isViewerSuperAdmin),
       u.accountName || "",
       u.bankName || "",
       u.accountNumber || "",
     ]);
-    const csv = [headers.join(","), ...rows.map((row) => row.join(","))].join(
-      "\n"
-    );
+
+    return [headers, ...rows]
+      .map((row) => row.map(escapeCsvValue).join(","))
+      .join("\n");
+  };
+
+  const maskSensitiveValue = (value: string | null, isSuperAdmin: boolean) => {
+    if (isSuperAdmin || !value) return value || "";
+    if (value.length <= 4) return value;
+    return `•••• ${value.slice(-4)}`;
+  };
+
+  const downloadCsv = (csv: string, filename: string) => {
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `users-export-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
-    showToast(`Exported ${ids.length} user(s)`, "success");
+  };
+
+  const buildXlsx = (users: UserRow[]) => {
+    const headers = [
+      "Name",
+      "Email",
+      "Role",
+      "Referrals",
+      "Commission",
+      "Joined",
+      "Phone",
+      "City",
+      "State",
+      "Country",
+      "NIN",
+      "Account Name",
+      "Bank Name",
+      "Account Number",
+    ];
+
+    const rows = users.map((u) => [
+      u.name || "",
+      u.email,
+      u.role,
+      u.referralCount,
+      u.commission.toFixed(2),
+      formatShortDate(u.createdAt),
+      maskSensitiveValue(u.phone, isViewerSuperAdmin),
+      u.city || "",
+      u.state || "",
+      u.country || "",
+      maskSensitiveValue(u.nin, isViewerSuperAdmin),
+      u.accountName || "",
+      u.bankName || "",
+      u.accountNumber || "",
+    ]);
+
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Users");
+    return workbook;
+  };
+
+  const downloadXlsx = (workbook: XLSX.WorkBook, filename: string) => {
+    XLSX.writeFile(workbook, filename);
+  };
+
+  const handleBulkExport = (
+    mode:
+      | "selected"
+      | "all"
+      | "with-nin"
+      | "without-nin"
+      | "realtors"
+      | "users"
+      | "top-referrals" = "selected",
+    format: "csv" | "xlsx" = "csv"
+  ) => {
+    let usersToExport: UserRow[] = [];
+    if (mode === "selected") {
+      const ids = Array.from(selectedIds);
+      if (ids.length === 0) return;
+      usersToExport = usersState.filter((u) => ids.includes(u.id));
+    } else if (mode === "all") {
+      usersToExport = usersState;
+    } else if (mode === "with-nin") {
+      usersToExport = usersState.filter((u) => Boolean(u.nin));
+    } else if (mode === "without-nin") {
+      usersToExport = usersState.filter((u) => !u.nin);
+    } else if (mode === "realtors") {
+      usersToExport = usersState.filter((u) => u.role === "REALTOR");
+    } else if (mode === "users") {
+      usersToExport = usersState.filter((u) => u.role === "USER");
+    } else if (mode === "top-referrals") {
+      usersToExport = [...usersState]
+        .sort((a, b) => b.referralCount - a.referralCount)
+        .slice(0, 10);
+    }
+
+    const filenameBase = `users-export-${mode}-${new Date()
+      .toISOString()
+      .slice(0, 10)}`;
+
+    if (format === "xlsx") {
+      const workbook = buildXlsx(usersToExport);
+      downloadXlsx(workbook, `${filenameBase}.xlsx`);
+    } else {
+      const csv = buildCsv(usersToExport);
+      const filename = `${filenameBase}.csv`;
+      downloadCsv(csv, filename);
+    }
+
+    showToast(`Exported ${usersToExport.length} user(s)`, "success");
   };
 
   const requestDeleteUser = (user: UserRow) => setPendingDeleteUser(user);
@@ -378,6 +494,23 @@ export function useAdminUsers(
   // ─── Filtering & pagination ────────────────────────────────────
   const filteredUsers = useMemo(() => {
     const q = search.trim().toLowerCase();
+    const topCount =
+      topReferralFilter === "TOP_5"
+        ? 5
+        : topReferralFilter === "TOP_10"
+        ? 10
+        : topReferralFilter === "TOP_25"
+        ? 25
+        : 0;
+    const topReferralIds = new Set(
+      topCount > 0
+        ? [...usersState]
+            .sort((a, b) => b.referralCount - a.referralCount)
+            .slice(0, topCount)
+            .map((u) => u.id)
+        : []
+    );
+
     return usersState.filter((u) => {
       const matchesSearch =
         !q ||
@@ -385,16 +518,17 @@ export function useAdminUsers(
         u.email.toLowerCase().includes(q) ||
         u.referralCode?.toLowerCase().includes(q);
       const matchesRole = roleFilter === "ALL" || u.role === roleFilter;
-      // ✅ NIN verification filter
       let matchesNin = true;
       if (ninVerifiedFilter === "VERIFIED") {
         matchesNin = u.ninVerified === true;
       } else if (ninVerifiedFilter === "UNVERIFIED") {
         matchesNin = u.ninVerified === false;
       }
-      return matchesSearch && matchesRole && matchesNin;
+      const matchesTopReferrals =
+        topReferralFilter === "ALL" || topReferralIds.has(u.id);
+      return matchesSearch && matchesRole && matchesNin && matchesTopReferrals;
     });
-  }, [usersState, search, roleFilter, ninVerifiedFilter]);
+  }, [usersState, search, roleFilter, ninVerifiedFilter, topReferralFilter]);
 
   const filterKey = `${search}|${roleFilter}|${pageSize}|${ninVerifiedFilter}`;
   const prevFilterKeyRef = useRef(filterKey);
@@ -519,6 +653,8 @@ export function useAdminUsers(
     setRoleFilter,
     ninVerifiedFilter,
     setNinVerifiedFilter,
+    topReferralFilter,
+    setTopReferralFilter,
     pageSize,
     setPageSize,
     currentPage,
