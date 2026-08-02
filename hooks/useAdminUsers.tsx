@@ -85,7 +85,14 @@ interface UseAdminUsersReturn {
   handleBulkDelete: () => void;
   confirmBulkDelete: () => Promise<void>;
   handleBulkExport: (
-    mode: "selected" | "all" | "with-nin" | "without-nin",
+    mode:
+      | "selected"
+      | "all"
+      | "with-nin"
+      | "without-nin"
+      | "realtors"
+      | "users"
+      | "top-referrals",
     format: "csv" | "xlsx"
   ) => void;
   requestDeleteUser: (user: UserRow) => void;

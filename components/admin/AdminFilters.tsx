@@ -247,7 +247,7 @@ export default function AdminFilters({
             <Trash className="h-4 w-4" /> Delete
           </button>
           <button
-            onClick={() => onBulkExport("selected")}
+            onClick={() => onBulkExport("selected", exportFormat)}
             className="flex items-center gap-1.5 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors"
           >
             <Download className="h-4 w-4" /> Export CSV

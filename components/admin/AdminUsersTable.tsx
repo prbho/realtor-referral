@@ -41,6 +41,8 @@ export default function AdminUsersTable({
     roleFilter,
     ninVerifiedFilter,
     setNinVerifiedFilter,
+    topReferralFilter,
+    setTopReferralFilter,
     setRoleFilter,
     pageSize,
     setPageSize,
@@ -162,6 +164,8 @@ export default function AdminUsersTable({
           setRoleFilter={setRoleFilter}
           ninVerifiedFilter={ninVerifiedFilter}
           setNinVerifiedFilter={setNinVerifiedFilter}
+          topReferralFilter={topReferralFilter}
+          setTopReferralFilter={setTopReferralFilter}
           pageSize={pageSize}
           setPageSize={setPageSize}
           selectedCount={selectedIds.size}
