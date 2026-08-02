@@ -224,10 +224,10 @@ export default async function DashboardPage() {
         </div>
         <div className="flex justify-end flex-row-reverse gap-3 sm:gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-col gap-2 items-end">
-            <div className="text-xs font-medium px-3 py-1 rounded-2xl w-fit bg-white dark:bg-slate-800 border border-slate-200 dark:border-neutral-700 text-neutral-600 dark:text-gray-300">
+            <div className="text-xs font-medium px-2 py-1 rounded-xl w-fit bg-white dark:bg-slate-800 border border-slate-200 dark:border-neutral-700 text-neutral-600 dark:text-gray-300">
               {user.isSuperAdmin ? (
                 <span className="flex items-center gap-1">
-                  <Zap className="h-3.5 w-3.5" />
+                  <Zap className="h-3 w-3" />
                   SuperAdmin
                 </span>
               ) : (
@@ -240,7 +240,7 @@ export default async function DashboardPage() {
                   key={badge.label}
                   title={badge.label}
                   aria-label={badge.label}
-                  className="inline-flex items-center justify-center text-lg font-semibold uppercase rounded-sm bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300"
+                  className="inline-flex items-center justify-center text-sm font-semibold uppercase rounded-sm bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300"
                 >
                   {badge.icon}
                 </span>
@@ -250,7 +250,7 @@ export default async function DashboardPage() {
 
           <div className="group relative flex items-center flex-col gap-1">
             <div className="relative">
-              <div className="h-16 w-16 rounded-full bg-blue-100 dark:bg-blue-950/50 flex items-center justify-center text-2xl">
+              <div className="h-12 w-12 rounded-full bg-blue-100 dark:bg-blue-950/50 flex items-center justify-center text-2xl">
                 {displayRankBadges.length > 0
                   ? displayRankBadges[displayRankBadges.length - 1].icon
                   : "★"}
