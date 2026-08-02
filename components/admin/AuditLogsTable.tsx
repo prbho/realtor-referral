@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import {
   Table,
   TableBody,
@@ -12,7 +13,7 @@ import {
 type AuditLogEntry = {
   id: string;
   action: string;
-  details: Record<string, unknown> | null;
+  details: Record<string, unknown> | string | unknown[] | null;
   ip: string | null;
   createdAt: string;
   user: {
@@ -32,14 +33,67 @@ function formatDateTime(value: string) {
   });
 }
 
-export default function AuditLogsTable({ logs }: { logs: AuditLogEntry[] }) {
+function prettyLabel(key: string) {
+  return key
+    .replace(/([A-Z])/g, " $1")
+    .replace(/_/g, " ")
+    .replace(/^./, (char) => char.toUpperCase());
+}
+
+function formatAuditDetails(
+  details: Record<string, unknown> | string | unknown[] | null
+) {
+  if (!details) {
+    return "—";
+  }
+
+  if (typeof details === "string") {
+    return details;
+  }
+
+  if (Array.isArray(details)) {
+    return details.map((item) => String(item)).join(", ");
+  }
+
+  const entries = Object.entries(details);
+  if (entries.length === 0) {
+    return "—";
+  }
+
+  const text = entries
+    .map(([key, value]) => {
+      const formattedValue =
+        value === null || value === undefined
+          ? "—"
+          : typeof value === "object"
+          ? JSON.stringify(value)
+          : String(value);
+      return `${prettyLabel(key)}: ${formattedValue}`;
+    })
+    .join("; ");
+
+  return text;
+}
+
+interface AuditLogsTableProps {
+  logs: AuditLogEntry[];
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+}
+
+export default function AuditLogsTable({
+  logs,
+  page,
+  pageSize,
+  total,
+  totalPages,
+}: AuditLogsTableProps) {
   return (
     <div className="mt-10 mb-16 px-4 sm:px-0">
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-6">
         <div>
-          <p className="text-sm uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
-            Admin
-          </p>
           <h1 className="text-2xl font-bold text-neutral-800 dark:text-white">
             Audit Logs
           </h1>
@@ -91,8 +145,8 @@ export default function AuditLogsTable({ logs }: { logs: AuditLogEntry[] }) {
                   <TableCell className="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">
                     {log.ip || "—"}
                   </TableCell>
-                  <TableCell className="px-4 py-3 text-sm text-slate-600 dark:text-slate-300 max-w-[24rem] truncate">
-                    {log.details ? JSON.stringify(log.details) : "—"}
+                  <TableCell className="px-4 py-3 text-sm text-slate-600 dark:text-slate-300 max-w-[24rem] whitespace-normal wrap-break-word">
+                    {formatAuditDetails(log.details)}
                   </TableCell>
                   <TableCell className="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">
                     {formatDateTime(log.createdAt)}
@@ -102,6 +156,42 @@ export default function AuditLogsTable({ logs }: { logs: AuditLogEntry[] }) {
             )}
           </TableBody>
         </Table>
+
+        {logs.length > 0 && (
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between px-4 py-3 border-t border-gray-200 dark:border-neutral-700 bg-gray-50 dark:bg-slate-900/70">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Showing {(page - 1) * pageSize + 1}–
+              {Math.min(page * pageSize, total)} of {total}
+            </p>
+            <div className="flex items-center gap-2">
+              <Link
+                href={`/admin/audit?page=${Math.max(page - 1, 1)}`}
+                className={`px-3 py-1.5 rounded-md border text-sm font-medium transition-colors ${
+                  page === 1
+                    ? "border-gray-200 text-gray-400 cursor-not-allowed bg-white/80 dark:bg-slate-800/80"
+                    : "border-gray-300 text-neutral-700 bg-white hover:bg-gray-50 dark:border-neutral-700 dark:text-gray-200 dark:hover:bg-neutral-800"
+                }`}
+                aria-disabled={page === 1}
+              >
+                Previous
+              </Link>
+              <span className="text-sm text-gray-500 dark:text-gray-400">
+                Page {page} of {totalPages}
+              </span>
+              <Link
+                href={`/admin/audit?page=${Math.min(page + 1, totalPages)}`}
+                className={`px-3 py-1.5 rounded-md border text-sm font-medium transition-colors ${
+                  page === totalPages
+                    ? "border-gray-200 text-gray-400 cursor-not-allowed bg-white/80 dark:bg-slate-800/80"
+                    : "border-gray-300 text-neutral-700 bg-white hover:bg-gray-50 dark:border-neutral-700 dark:text-gray-200 dark:hover:bg-neutral-800"
+                }`}
+                aria-disabled={page === totalPages}
+              >
+                Next
+              </Link>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

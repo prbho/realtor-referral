@@ -92,7 +92,7 @@ export default function Leaderboard() {
         </div>
       </div>
 
-      <div className="space-y-2 px-4 py-3 max-h-99 overflow-y-auto">
+      <div className="space-y-2 px-4 py-3 max-h-99 overflow-y-auto hover-scrollbar">
         {loading ? (
           <div className="flex justify-center py-6">
             <Loader2 className="h-5 w-5 animate-spin text-slate-400" />

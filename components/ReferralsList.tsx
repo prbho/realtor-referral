@@ -86,7 +86,7 @@ export default function ReferralsList({
       </div>
 
       {/* ─── List ───────────────────────────────────────────── */}
-      <div className="flex-1 min-h-0 overflow-y-auto">
+      <div className="flex-1 min-h-0 space-y-2 py-3 max-h-99 overflow-y-auto hover-scrollbar">
         {referrals.length === 0 ? (
           <div className="bg-slate-50 dark:bg-slate-950/40 dark:border-slate-700 rounded-2xl p-8 text-center">
             <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-sky-100 text-sky-700 dark:bg-sky-900/50 dark:text-sky-300">

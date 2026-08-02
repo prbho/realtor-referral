@@ -11,7 +11,7 @@ export default function Footer() {
           &copy; {year} Regal PDC Ltd. All rights reserved.
         </p>
 
-        <nav className="flex items-center gap-6 text-sm text-gray-500 dark:text-gray-400 transition-colors duration-200">
+        <nav className="flex flex-wrap items-center gap-6 text-sm text-gray-500 dark:text-gray-400 transition-colors duration-200">
           <Link
             href="/dashboard"
             className="hover:text-neutral-800 dark:hover:text-white transition-colors duration-200"
@@ -29,6 +29,18 @@ export default function Footer() {
             className="hover:text-neutral-800 dark:hover:text-white transition-colors duration-200"
           >
             Profile
+          </Link>
+          <Link
+            href="/pub/privacy"
+            className="hover:text-neutral-800 dark:hover:text-white transition-colors duration-200"
+          >
+            Privacy
+          </Link>
+          <Link
+            href="/pub/terms"
+            className="hover:text-neutral-800 dark:hover:text-white transition-colors duration-200"
+          >
+            Terms
           </Link>
           <a
             href="mailto:info@regalpdc.com"

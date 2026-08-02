@@ -175,3 +175,46 @@ body {
     margin: 12mm;
   }
 }
+
+.hover-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  scrollbar-gutter: stable both-edges;
+  -webkit-overflow-scrolling: touch;
+  padding-right: 8px;
+}
+
+.hover-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+  background: transparent;
+}
+
+.hover-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.hover-scrollbar::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.hover-scrollbar:hover::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.85);
+}
+
+.hover-scrollbar:hover {
+  scrollbar-color: rgba(148, 163, 184, 0.85) transparent;
+}
+
+@media (hover: none) {
+  .hover-scrollbar {
+    scrollbar-color: rgba(148, 163, 184, 0.85) transparent;
+  }
+
+  .hover-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.85);
+  }
+}

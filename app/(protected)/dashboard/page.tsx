@@ -119,6 +119,8 @@ export default async function DashboardPage() {
   const nextMilestone = MILESTONES.find(
     (m) => validRealtorReferrals < m.target
   );
+
+  const referrals = user.referrals;
   const currentRankLabel =
     achievedMilestones.length > 0
       ? achievedMilestones[achievedMilestones.length - 1].label
@@ -340,7 +342,7 @@ export default async function DashboardPage() {
         </div>
 
         <ReferralsList
-          referrals={user.referrals}
+          referrals={referrals}
           isVerified={isVerified}
           referralLink={referralLink}
         />

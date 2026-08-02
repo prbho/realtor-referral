@@ -140,9 +140,9 @@ export default function ScheduleEmailForm({
     <div className="mt-10 mb-16 px-4 sm:px-0">
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-6">
         <div>
-          <p className="text-sm uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+          {/* <p className="text-sm uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
             Admin
-          </p>
+          </p> */}
           <h1 className="text-2xl font-bold text-neutral-800 dark:text-white">
             Schedule Email
           </h1>

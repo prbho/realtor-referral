@@ -3,7 +3,15 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUser, isAdmin } from "@/lib/currentUser";
 import AuditLogsTable from "@/components/admin/AuditLogsTable";
 
-export default async function AuditLogsPage() {
+const PAGE_SIZE = 50;
+
+interface AuditLogsPageProps {
+  searchParams: { page?: string };
+}
+
+export default async function AuditLogsPage({
+  searchParams,
+}: AuditLogsPageProps) {
   const currentUser = await getCurrentUser();
 
   if (!currentUser) {
@@ -14,18 +22,35 @@ export default async function AuditLogsPage() {
     redirect("/dashboard");
   }
 
-  const logs = await prisma.auditLog.findMany({
-    include: {
-      user: {
-        select: {
-          name: true,
-          email: true,
+  const page = Math.max(Number(searchParams.page ?? "1"), 1);
+  const skip = (page - 1) * PAGE_SIZE;
+
+  const [logs, total] = await Promise.all([
+    prisma.auditLog.findMany({
+      include: {
+        user: {
+          select: {
+            name: true,
+            email: true,
+          },
         },
       },
-    },
-    orderBy: { createdAt: "desc" },
-    take: 200,
-  });
+      orderBy: { createdAt: "desc" },
+      skip,
+      take: PAGE_SIZE,
+    }),
+    prisma.auditLog.count(),
+  ]);
 
-  return <AuditLogsTable logs={JSON.parse(JSON.stringify(logs))} />;
+  const totalPages = Math.max(Math.ceil(total / PAGE_SIZE), 1);
+
+  return (
+    <AuditLogsTable
+      logs={JSON.parse(JSON.stringify(logs))}
+      page={page}
+      pageSize={PAGE_SIZE}
+      total={total}
+      totalPages={totalPages}
+    />
+  );
 }
