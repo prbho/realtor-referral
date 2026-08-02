@@ -7,6 +7,7 @@ import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { isValidEmail, isValidPassword, isValidNIN } from "@/lib/validation";
 import { sendVerificationEmail } from "@/lib/email";
+import { checkRateLimit, recordAttempt } from "@/lib/rateLimit";
 
 const OPTIONAL_TEXT_FIELDS = [
   "phone",
@@ -29,6 +30,18 @@ export async function PATCH(request: NextRequest) {
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
+
+    const identifier = `profile-update:${session.user.id}`;
+    const rateCheck = await checkRateLimit(identifier);
+    if (!rateCheck.allowed) {
+      return NextResponse.json(
+        {
+          error: `Too many profile updates. Try again in ${rateCheck.retryAfterMinutes} minutes.`,
+        },
+        { status: 429 }
+      );
+    }
+    await recordAttempt(identifier);
 
     const body = await request.json();
     const { name, email: rawEmail, currentPassword, newPassword, nin } = body;

@@ -53,7 +53,7 @@ export default function ForgotPasswordPage() {
         <CardTitle>
           <h1
             style={{ fontFamily: "var(--font-fraunces)" }}
-            className="text-2xl font-bold text-slate-900 dark:text-white"
+            className="text-xl font-bold text-slate-900 dark:text-white"
           >
             Forgot Password
           </h1>

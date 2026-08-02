@@ -15,3 +15,9 @@ export function generateReferralCode(name: string): string {
   const suffix = Math.random().toString(36).slice(2, 6).toUpperCase();
   return `${base}${suffix}`;
 }
+
+export function isInternalRedirectUrl(url: unknown): url is string {
+  return (
+    typeof url === "string" && url.startsWith("/") && !url.startsWith("//")
+  );
+}

@@ -14,14 +14,18 @@ const nextConfig: NextConfig = {
   },
   turbopack: {},
   async headers() {
+    const scriptSrc =
+      process.env.NODE_ENV === "production"
+        ? "'self'"
+        : "'self' 'unsafe-inline' 'unsafe-eval'";
+
     return [
       {
         source: "/:path*",
         headers: [
           {
             key: "Content-Security-Policy",
-            value:
-              "default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'; object-src 'none'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.supabase.co; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co; upgrade-insecure-requests",
+            value: `default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'; object-src 'none'; script-src ${scriptSrc}; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.supabase.co; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co; upgrade-insecure-requests`,
           },
           {
             key: "Permissions-Policy",

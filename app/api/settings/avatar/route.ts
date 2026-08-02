@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { checkRateLimit, recordAttempt } from "@/lib/rateLimit";
 
 const BUCKET = "avatars";
 const MAX_SIZE_BYTES = 5 * 1024 * 1024;
@@ -22,9 +23,9 @@ function hasExpectedImageSignature(buffer: Buffer, type: string): boolean {
   if (type === "image/png") {
     return (
       buffer.length >= 8 &&
-      buffer.subarray(0, 8).equals(
-        Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
-      )
+      buffer
+        .subarray(0, 8)
+        .equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))
     );
   }
 
@@ -69,6 +70,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
+    const identifier = `avatar-action:${session.user.id}`;
+    const rateCheck = await checkRateLimit(identifier);
+    if (!rateCheck.allowed) {
+      return NextResponse.json(
+        {
+          error: `Too many avatar actions. Try again in ${rateCheck.retryAfterMinutes} minutes.`,
+        },
+        { status: 429 }
+      );
+    }
+    await recordAttempt(identifier);
+
     const contentLength = Number(request.headers.get("content-length"));
     if (Number.isFinite(contentLength) && contentLength > MAX_SIZE_BYTES) {
       return NextResponse.json(
@@ -110,8 +123,8 @@ export async function POST(request: NextRequest) {
       file.type === "image/png"
         ? "png"
         : file.type === "image/webp"
-          ? "webp"
-          : "jpg";
+        ? "webp"
+        : "jpg";
     const path = `${session.user.id}-${Date.now()}.${extension}`;
     const buffer = Buffer.from(await file.arrayBuffer());
 
@@ -167,6 +180,18 @@ export async function DELETE() {
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
+
+    const identifier = `avatar-action:${session.user.id}`;
+    const rateCheck = await checkRateLimit(identifier);
+    if (!rateCheck.allowed) {
+      return NextResponse.json(
+        {
+          error: `Too many avatar actions. Try again in ${rateCheck.retryAfterMinutes} minutes.`,
+        },
+        { status: 429 }
+      );
+    }
+    await recordAttempt(identifier);
 
     const currentUser = await prisma.user.findUnique({
       where: { id: session.user.id },

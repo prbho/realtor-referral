@@ -83,9 +83,12 @@ export default function HeaderClient({ initialUser }: HeaderClientProps) {
 
               <div className="relative" ref={menuRef}>
                 <button
+                  id="user-menu-button"
                   onClick={() => setIsOpen((prev) => !prev)}
                   className="h-9 w-9 rounded-full overflow-hidden border border-gray-300 dark:border-slate-600 text-white flex items-center justify-center text-sm font-semibold hover:ring-2 hover:ring-offset-1 hover:ring-blue-500 transition-all duration-200 focus:outline-none"
                   aria-label="User menu"
+                  aria-haspopup="true"
+                  aria-controls="user-menu"
                   aria-expanded={isOpen}
                   onKeyDown={(event) => {
                     if (event.key === "Escape") {
@@ -100,7 +103,12 @@ export default function HeaderClient({ initialUser }: HeaderClientProps) {
                 </button>
 
                 {isOpen && (
-                  <div className="absolute right-0 mt-2 w-56 bg-white/95 dark:bg-[#161b22]/95 backdrop-blur-sm border border-gray-200/50 dark:border-slate-700/50 rounded-xl shadow-xl py-1 transition-all duration-200 origin-top-right scale-100 opacity-100">
+                  <div
+                    id="user-menu"
+                    role="menu"
+                    aria-labelledby="user-menu-button"
+                    className="absolute right-0 mt-2 w-56 bg-white/95 dark:bg-[#161b22]/95 backdrop-blur-sm border border-gray-200/50 dark:border-slate-700/50 rounded-xl shadow-xl py-1 transition-all duration-200 origin-top-right scale-100 opacity-100"
+                  >
                     <div className="px-4 py-3 border-b border-gray-200/50 dark:border-slate-700/50">
                       <p className="text-sm font-medium text-slate-900 dark:text-white truncate">
                         {currentUser.name}

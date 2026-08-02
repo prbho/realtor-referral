@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { isValidEmail } from "@/lib/validation";
+import { isInternalRedirectUrl } from "@/lib/utils";
 import { Eye, EyeOff } from "lucide-react";
 import {
   Card,
@@ -18,9 +19,13 @@ export default function LoginForm() {
   const searchParams = useSearchParams();
   const verified = searchParams.get("verified");
   const completeProfile = searchParams.get("completeProfile");
-  const callbackUrl =
-    searchParams.get("callbackUrl") ||
-    (completeProfile ? "/profile" : "/dashboard");
+  const callbackUrlRaw = searchParams.get("callbackUrl");
+  const callbackUrl = isInternalRedirectUrl(callbackUrlRaw)
+    ? callbackUrlRaw
+    : completeProfile
+    ? "/profile"
+    : "/dashboard";
+  const safeCallbackUrl = callbackUrl ?? "/dashboard";
 
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [rememberMe, setRememberMe] = useState(false);
@@ -87,7 +92,7 @@ export default function LoginForm() {
         return;
       }
 
-      router.push(callbackUrl);
+      router.push(safeCallbackUrl);
       router.refresh();
     } catch (err) {
       console.error("Login error:", err);
@@ -97,12 +102,12 @@ export default function LoginForm() {
   };
 
   return (
-    <Card className="w-full max-w-md mx-auto mt-10 bg-white dark:bg-[#161b22] border border-slate-200 dark:border-slate-700/50 shadow-sm rounded-xl transition-colors duration-300">
+    <Card className="w-full max-w-xs mx-auto mt-10 bg-white dark:bg-[#161b22] border border-slate-200 dark:border-slate-700/50 shadow-sm rounded-xl transition-colors duration-300">
       <CardHeader className="space-y-1">
         <CardTitle>
           <h1
             style={{ fontFamily: "var(--font-fraunces)" }}
-            className="text-2xl font-bold text-slate-900 dark:text-white"
+            className="text-xl font-bold text-slate-900 dark:text-white"
           >
             Sign In
           </h1>

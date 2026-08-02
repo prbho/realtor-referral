@@ -185,12 +185,12 @@ export default function RegisterForm() {
     isLoading || regPaused || (!!referralCode && referrerNinVerified === false);
 
   return (
-    <Card className="w-full max-w-md mx-auto mt-10 bg-white dark:bg-[#161b22] border border-slate-200 dark:border-slate-700/50 shadow-sm rounded-xl transition-colors duration-300">
+    <Card className="w-full max-w-xs mx-auto mt-10 bg-white dark:bg-[#161b22] border border-slate-200 dark:border-slate-700/50 shadow-sm rounded-xl transition-colors duration-300">
       <CardHeader className="space-y-1">
         <CardTitle>
           <h1
             style={{ fontFamily: "var(--font-fraunces)" }}
-            className="text-2xl font-bold text-slate-900 dark:text-white"
+            className="text-xl font-bold text-slate-900 dark:text-white"
           >
             Create Account
           </h1>
