@@ -15,7 +15,7 @@ export default function Layout({
   return (
     <div className="bg-[#faf8f5] dark:bg-[#0d1117] transition-colors duration-300">
       <Header />
-      <main className="flex-1 flex flex-col mx-auto max-w-6xl px-4 md:px-0 py-6">
+      <main className="flex-1 flex flex-col mx-auto max-w-6xl px-4 md:px-0 py-8 md:py-12 gap-6">
         {children}
       </main>
       <Footer />

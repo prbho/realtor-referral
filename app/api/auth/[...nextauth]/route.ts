@@ -66,6 +66,7 @@ export const authOptions: NextAuthOptions = {
             id: user.id,
             email: user.email,
             name: user.name,
+            image: user.image,
             role: user.role,
             rememberMe: credentials.rememberMe === "true",
           };
@@ -85,6 +86,7 @@ export const authOptions: NextAuthOptions = {
         token.role = user.role ?? "";
         token.id = user.id;
         token.rememberMe = user.rememberMe;
+        token.picture = user.image ?? token.picture;
       }
       if (trigger === "update" && session?.image !== undefined) {
         token.picture = session.image;

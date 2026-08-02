@@ -13,7 +13,6 @@ import { getRankBadges, getSuperAdminPreviewBadges } from "@/lib/rankBadges";
 import RankAchievementModal from "@/components/RankAchievementModal";
 import RankBanner from "@/components/RankBanner";
 import ReferralsList from "@/components/ReferralsList";
-import UserAvatar from "@/components/UserAvatar";
 import Leaderboard from "@/components/Leaderboard";
 import ReferralLinkCard from "@/components/ReferralLinkCard";
 
@@ -223,7 +222,7 @@ export default async function DashboardPage() {
             {today}
           </p>
         </div>
-        <div className="flex items-center gap-3 flex-row-reverse sm:flex-row justify-between">
+        <div className="flex justify-end flex-row-reverse gap-3 sm:gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-col gap-2 items-end">
             <div className="text-xs font-medium px-3 py-1 rounded-2xl w-fit bg-white dark:bg-slate-800 border border-slate-200 dark:border-neutral-700 text-neutral-600 dark:text-gray-300">
               {user.isSuperAdmin ? (
@@ -236,7 +235,7 @@ export default async function DashboardPage() {
               )}
             </div>
             <div className="flex flex-wrap gap-2 items-center">
-              {displayRankBadges.map((badge) => (
+              {displayRankBadges.slice(0, -1).map((badge) => (
                 <span
                   key={badge.label}
                   title={badge.label}
@@ -248,7 +247,21 @@ export default async function DashboardPage() {
               ))}
             </div>
           </div>
-          <UserAvatar src={user.image} name={user.name} size={40} />
+
+          <div className="group relative flex items-center flex-col gap-1">
+            <div className="relative">
+              <div className="h-16 w-16 rounded-full bg-blue-100 dark:bg-blue-950/50 flex items-center justify-center text-2xl">
+                {displayRankBadges.length > 0
+                  ? displayRankBadges[displayRankBadges.length - 1].icon
+                  : "★"}
+              </div>
+              <span className="pointer-events-none absolute left-1/2 -bottom-10 -translate-x-1/2 rounded-full bg-slate-900/95 px-3 py-1 text-[11px] text-white opacity-0 transition-opacity duration-200 group-hover:opacity-100 whitespace-nowrap shadow-lg">
+                {displayRankBadges.length > 0
+                  ? displayRankBadges[displayRankBadges.length - 1].label
+                  : "Rookie Recruiter"}
+              </span>
+            </div>
+          </div>
         </div>
       </div>
 
