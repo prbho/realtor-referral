@@ -87,6 +87,7 @@ type FormData = {
   accountNumber: string;
   bankName: string;
 };
+import { compressImage } from "@/lib/compressImage";
 
 const COUNTRY_OPTIONS = (() => {
   const regionNames = new Intl.DisplayNames(["en"], { type: "region" });
@@ -484,8 +485,15 @@ export default function ProfileForm({ user }: { user: UserData }) {
     setPhotoStatus({ loading: true, saved: false, error: "" });
 
     try {
+      const compressedFile = await compressImage(file, {
+        maxWidth: 800,
+        maxHeight: 800,
+        quality: 0.7,
+        outputType: "image/webp",
+      });
+
       const uploadData = new FormData();
-      uploadData.append("file", file);
+      uploadData.append("file", compressedFile);
 
       const res = await fetch("/api/settings/avatar", {
         method: "POST",
