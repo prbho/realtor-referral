@@ -75,7 +75,7 @@ export default async function DashboardPage() {
       referralCount: true,
       commission: true,
       isSuperAdmin: true,
-      referredBy: true, // ✅ added
+      referredBy: true,
       referrals: {
         select: {
           id: true,

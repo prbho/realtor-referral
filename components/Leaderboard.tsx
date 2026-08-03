@@ -4,6 +4,7 @@
 import { useState, useEffect } from "react";
 import { Trophy, Loader2 } from "lucide-react";
 import UserAvatar from "@/components/UserAvatar";
+import MiniProfileModal from "./MiniProfileModal";
 
 interface LeaderboardEntry {
   id: string;
@@ -37,6 +38,8 @@ export default function Leaderboard() {
   const [data, setData] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -58,90 +61,108 @@ export default function Leaderboard() {
     fetchData();
   }, [period]);
 
+  const handleEntryClick = (userId: string) => {
+    setSelectedUserId(userId);
+    setIsModalOpen(true);
+  };
+
   return (
-    <div className="col-span-4 flex flex-col bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden transition-colors duration-200">
-      <div className="flex flex-col  justify-between gap-3 border-b border-slate-200 dark:border-slate-700 px-4 py-4">
-        <div className="flex items-center gap-2">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-linear-to-br from-fuchsia-100 to-fuchsia-100/5">
-            <Trophy className="h-6 w-6 text-fuchsia-800" />
+    <>
+      <div className="col-span-4 flex flex-col bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden transition-colors duration-200">
+        <div className="flex flex-col justify-between gap-3 border-b border-slate-200 dark:border-slate-700 px-4 py-4">
+          <div className="flex items-center gap-2">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-linear-to-br from-fuchsia-100 to-fuchsia-100/5">
+              <Trophy className="h-6 w-6 text-fuchsia-800" />
+            </div>
+            <div>
+              <h2 className="text-sm font-semibold text-slate-900 dark:text-white">
+                Leaderboard
+              </h2>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                Top 20 referrers.
+              </p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-sm font-semibold text-slate-900 dark:text-white">
-              Leaderboard
-            </h2>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400">
-              Top 20 referrers.
+
+          <div className="flex items-center gap-2 justify-between">
+            {(["week", "month", "all"] as Period[]).map((p) => (
+              <button
+                key={p}
+                onClick={() => setPeriod(p)}
+                className={`rounded-full flex-1 px-3 py-1.5 text-[12px] font-semibold transition-colors ${
+                  p === period
+                    ? "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900"
+                    : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+                }`}
+              >
+                {PERIOD_LABELS[p]}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="space-y-2 px-4 py-3 max-h-99 overflow-y-auto hover-scrollbar">
+          {loading ? (
+            <div className="flex justify-center py-6">
+              <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
+            </div>
+          ) : error ? (
+            <p className="text-sm text-red-600 dark:text-red-400 text-center py-5">
+              {error}
             </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2 justify-between">
-          {(["week", "month", "all"] as Period[]).map((p) => (
-            <button
-              key={p}
-              onClick={() => setPeriod(p)}
-              className={`rounded-full flex-1 px-3 py-1.5 text-[12px] font-semibold transition-colors ${
-                p === period
-                  ? "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900"
-                  : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
-              }`}
-            >
-              {PERIOD_LABELS[p]}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="space-y-2 px-4 py-3 max-h-99 overflow-y-auto hover-scrollbar">
-        {loading ? (
-          <div className="flex justify-center py-6">
-            <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
-          </div>
-        ) : error ? (
-          <p className="text-sm text-red-600 dark:text-red-400 text-center py-5">
-            {error}
-          </p>
-        ) : data.length === 0 ? (
-          <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-5">
-            No referrals in this period.
-          </p>
-        ) : (
-          <div className="space-y-1">
-            {data.map((entry, index) => {
-              const rank = index + 1;
-              const isTop3 = rank <= 3;
-              return (
-                <div
-                  key={entry.id}
-                  className={`grid grid-cols-[2rem_minmax(0,1fr)_auto] items-center gap-3 rounded-xl px-3 py-2 transition-colors ${
-                    isTop3
-                      ? "bg-amber-50/70 dark:bg-amber-950/20"
-                      : "hover:bg-slate-50 dark:hover:bg-slate-900"
-                  }`}
-                >
-                  <div className="text-center text-xs font-semibold text-slate-500 dark:text-slate-400">
-                    {isTop3 ? MEDALS[rank - 1] : `#${rank}`}
-                  </div>
-                  <div className="flex items-center gap-3 min-w-0">
-                    <UserAvatar src={entry.image} name={entry.name} size={32} />
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">
-                        {entry.name || "Unnamed"}
-                      </p>
-                      <p className="truncate text-[11px] text-slate-500 dark:text-slate-400">
-                        {getReferralBadge(entry.allTimeReferralCount)}
-                      </p>
+          ) : data.length === 0 ? (
+            <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-5">
+              No referrals in this period.
+            </p>
+          ) : (
+            <div className="space-y-1">
+              {data.map((entry, index) => {
+                const rank = index + 1;
+                const isTop3 = rank <= 3;
+                return (
+                  <button
+                    key={entry.id}
+                    onClick={() => handleEntryClick(entry.id)}
+                    className={`w-full grid grid-cols-[2rem_minmax(0,1fr)_auto] items-center gap-3 rounded-xl px-3 py-2 transition-colors text-left ${
+                      isTop3
+                        ? "bg-amber-50/70 dark:bg-amber-950/20"
+                        : "hover:bg-slate-50 dark:hover:bg-slate-900"
+                    }`}
+                  >
+                    <div className="text-center text-xs font-semibold text-slate-500 dark:text-slate-400">
+                      {isTop3 ? MEDALS[rank - 1] : `#${rank}`}
                     </div>
-                  </div>
-                  <div className="text-right text-sm font-semibold text-slate-900 dark:text-white">
-                    {entry.referralCount}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
+                    <div className="flex items-center gap-3 min-w-0">
+                      <UserAvatar
+                        src={entry.image}
+                        name={entry.name}
+                        size={32}
+                      />
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">
+                          {entry.name || "Unnamed"}
+                        </p>
+                        <p className="truncate text-[11px] text-slate-500 dark:text-slate-400">
+                          {getReferralBadge(entry.allTimeReferralCount)}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right text-sm font-semibold text-slate-900 dark:text-white">
+                      {entry.referralCount}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+
+      <MiniProfileModal
+        userId={selectedUserId}
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+      />
+    </>
   );
 }

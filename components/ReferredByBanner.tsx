@@ -147,7 +147,7 @@ export default function ReferredByBanner({
             visible
               ? "translate-y-0 opacity-100"
               : "-translate-y-1 opacity-0 pointer-events-none"
-          } bg-gradient-to-r from-emerald-50 via-green-50 to-emerald-50 dark:from-emerald-950/30 dark:via-green-950/20 dark:to-emerald-950/30 border border-emerald-200 dark:border-emerald-800/60 shadow-lg shadow-emerald-200/50 dark:shadow-emerald-900/20`}
+          } bg-linear-to-r from-emerald-50 via-green-50 to-emerald-50 dark:from-emerald-950/30 dark:via-green-950/20 dark:to-emerald-950/30 border border-emerald-200 dark:border-emerald-800/60 shadow-lg shadow-emerald-200/50 dark:shadow-emerald-900/20`}
         >
           <div className="absolute inset-0 pointer-events-none rounded-xl ring-2 ring-emerald-400/30 dark:ring-emerald-500/30 animate-pulse" />
 
