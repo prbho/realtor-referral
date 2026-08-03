@@ -1,15 +1,14 @@
-// app/api/settings/avatar/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
-import { uploadFile, deleteFile, bucket } from "@/lib/r2"; // import bucket
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { checkRateLimit, recordAttempt } from "@/lib/rateLimit";
 
+const BUCKET = "avatars";
 const MAX_SIZE_BYTES = 5 * 1024 * 1024;
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
-
-// ─── Helpers ──────────────────────────────────────────────────
+const STORAGE_PATH_PREFIX = `/storage/v1/object/public/${BUCKET}/`;
 
 function hasExpectedImageSignature(buffer: Buffer, type: string): boolean {
   if (type === "image/jpeg") {
@@ -20,6 +19,7 @@ function hasExpectedImageSignature(buffer: Buffer, type: string): boolean {
       buffer[2] === 0xff
     );
   }
+
   if (type === "image/png") {
     return (
       buffer.length >= 8 &&
@@ -28,6 +28,7 @@ function hasExpectedImageSignature(buffer: Buffer, type: string): boolean {
         .equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))
     );
   }
+
   return (
     buffer.length >= 12 &&
     buffer.subarray(0, 4).toString("ascii") === "RIFF" &&
@@ -35,61 +36,32 @@ function hasExpectedImageSignature(buffer: Buffer, type: string): boolean {
   );
 }
 
-/**
- * Extract the R2 object key from a stored image URL.
- * Handles both full URLs and relative paths.
- * Removes the bucket name from the path if present.
- */
-function getAvatarStoragePath(
-  imageUrl: string | null,
-  log = true
-): string | null {
+function getAvatarStoragePath(imageUrl: string | null): string | null {
   if (!imageUrl) return null;
-
-  let path: string | null = null;
 
   try {
     const url = new URL(imageUrl);
-    path = url.pathname.replace(/^\/+/, ""); // remove leading slash
-  } catch {
-    path = imageUrl.replace(/^\/+/, "");
-  }
-
-  // Decode if needed
-  if (path) {
-    try {
-      path = decodeURIComponent(path);
-    } catch {
-      // keep as is
+    if (
+      !url.hostname.endsWith(".supabase.co") ||
+      !url.pathname.startsWith(STORAGE_PATH_PREFIX)
+    ) {
+      return null;
     }
-  }
 
-  // If the path starts with the bucket name, remove it
-  if (path && path.startsWith(`${bucket}/`)) {
-    path = path.slice(bucket.length + 1);
+    return decodeURIComponent(url.pathname.slice(STORAGE_PATH_PREFIX.length));
+  } catch {
+    return null;
   }
-
-  if (log) {
-    console.log(`[R2] Extracted key: "${path}" from URL: "${imageUrl}"`);
-  }
-  return path;
 }
 
 async function removeAvatarFromStorage(path: string | null) {
-  if (!path) {
-    console.log("[R2] No path to delete");
-    return;
-  }
-  try {
-    console.log(`[R2] Attempting to delete: ${path}`);
-    await deleteFile(path);
-    console.log(`[R2] Successfully deleted: ${path}`);
-  } catch (error) {
-    console.error(`[R2] Failed to delete ${path}:`, error);
+  if (!path) return;
+
+  const { error } = await supabaseAdmin.storage.from(BUCKET).remove([path]);
+  if (error) {
+    console.error("Supabase avatar cleanup failed", error);
   }
 }
-
-// ─── POST: upload new avatar ────────────────────────────────
 
 export async function POST(request: NextRequest) {
   try {
@@ -139,7 +111,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get current user to fetch old image URL
     const currentUser = await prisma.user.findUnique({
       where: { id: session.user.id },
       select: { image: true },
@@ -148,17 +119,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    console.log(`[R2] Current user image URL: "${currentUser.image}"`);
-
-    // Prepare new file
     const extension =
       file.type === "image/png"
         ? "png"
         : file.type === "image/webp"
         ? "webp"
         : "jpg";
-    const timestamp = Date.now();
-    const objectKey = `avatars/${session.user.id}-${timestamp}.${extension}`;
+    const path = `${session.user.id}-${Date.now()}.${extension}`;
     const buffer = Buffer.from(await file.arrayBuffer());
 
     if (!hasExpectedImageSignature(buffer, file.type)) {
@@ -168,51 +135,44 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Upload to R2
-    let imageUrl: string;
-    try {
-      console.log(`[R2] Uploading new file: ${objectKey}`);
-      imageUrl = await uploadFile(objectKey, buffer, file.type);
-      console.log(`[R2] Uploaded, URL: "${imageUrl}"`);
-    } catch (error) {
-      console.error("R2 upload failed:", error);
+    const { error: uploadError } = await supabaseAdmin.storage
+      .from(BUCKET)
+      .upload(path, buffer, { cacheControl: "3600", contentType: file.type });
+
+    if (uploadError) {
+      console.error("Supabase avatar upload failed", uploadError);
       return NextResponse.json(
         { error: "Failed to upload image" },
         { status: 500 }
       );
     }
 
-    // Update database
+    const { data: publicUrlData } = supabaseAdmin.storage
+      .from(BUCKET)
+      .getPublicUrl(path);
+    const imageUrl = publicUrlData.publicUrl;
+
     try {
       await prisma.user.update({
         where: { id: session.user.id },
         data: { image: imageUrl },
       });
     } catch (error) {
-      // Rollback: delete the newly uploaded file if DB update fails
-      await removeAvatarFromStorage(objectKey);
+      await removeAvatarFromStorage(path);
       throw error;
     }
 
-    // Delete old avatar (if any) – do this after successful DB update
-    const oldPath = getAvatarStoragePath(currentUser.image);
-    if (oldPath && oldPath !== objectKey) {
-      await removeAvatarFromStorage(oldPath);
-    } else {
-      console.log(`[R2] No old avatar to delete or same as new`);
-    }
+    await removeAvatarFromStorage(getAvatarStoragePath(currentUser.image));
 
     return NextResponse.json({ success: true, image: imageUrl });
   } catch (error) {
-    console.error("Avatar upload error:", error);
+    console.error("Avatar upload failed", error);
     return NextResponse.json(
       { error: "Something went wrong" },
       { status: 500 }
     );
   }
 }
-
-// ─── DELETE: remove avatar ──────────────────────────────────
 
 export async function DELETE() {
   try {
@@ -241,23 +201,15 @@ export async function DELETE() {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    console.log(`[R2] Removing avatar, current URL: "${currentUser.image}"`);
-
-    // Remove from database
     await prisma.user.update({
       where: { id: session.user.id },
       data: { image: null },
     });
-
-    // Delete the file from R2
-    const oldPath = getAvatarStoragePath(currentUser.image);
-    if (oldPath) {
-      await removeAvatarFromStorage(oldPath);
-    }
+    await removeAvatarFromStorage(getAvatarStoragePath(currentUser.image));
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Avatar removal error:", error);
+    console.error("Avatar removal failed", error);
     return NextResponse.json(
       { error: "Something went wrong" },
       { status: 500 }

@@ -15,12 +15,12 @@ import RankBanner from "@/components/RankBanner";
 import ReferralsList from "@/components/ReferralsList";
 import Leaderboard from "@/components/Leaderboard";
 import ReferralLinkCard from "@/components/ReferralLinkCard";
+import ReferredByBannerWrapper from "@/components/ReferredByBannerWrapper";
 
 export const metadata = {
   title: "Dashboard | Regal PDC Realtor",
 };
 
-// ─── Required fields ──────────────────────────────────────────
 const REQUIRED_PROFILE_FIELDS = [
   { key: "phone", label: "Phone Number" },
   { key: "streetAddress", label: "Street Address" },
@@ -40,7 +40,6 @@ const hasProfileValue = (value: unknown) => {
   return Boolean(value);
 };
 
-// ─── Milestones configuration ──────────────────────────────
 const MILESTONES = [
   { id: "tm", label: "Team Manager", target: 200 },
   { id: "stb", label: "Senior Team Builder", target: 500 },
@@ -76,6 +75,7 @@ export default async function DashboardPage() {
       referralCount: true,
       commission: true,
       isSuperAdmin: true,
+      referredBy: true, // ✅ added
       referrals: {
         select: {
           id: true,
@@ -85,6 +85,7 @@ export default async function DashboardPage() {
           image: true,
           role: true,
           ninVerified: true,
+          // referredBy: true, // not needed on referral object
         },
         orderBy: { createdAt: "desc" },
       },
@@ -201,7 +202,6 @@ export default async function DashboardPage() {
   });
 
   // ─── Compute weekly referrals ──────────────────────────────
-  // (we already have sevenDaysAgo set above, but we need to compute from now)
   const now = new Date();
   const weekAgo = new Date(now);
   weekAgo.setDate(weekAgo.getDate() - 7);
@@ -267,6 +267,11 @@ export default async function DashboardPage() {
         </div>
       </div>
 
+      <ReferredByBannerWrapper
+        userId={user.id}
+        hasReferrer={!!user.referredBy}
+      />
+
       {isProfileIncomplete && (
         <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 rounded-xl p-4 flex items-start gap-3">
           <div className="h-8 w-8 shrink-0 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center">
@@ -313,7 +318,6 @@ export default async function DashboardPage() {
         weeklyReferrals={weeklyReferrals}
       />
 
-      {/* ─── Referral Link Card (placed here) ────────────────── */}
       {isVerified ? (
         <ReferralLinkCard
           referralLink={referralLink}

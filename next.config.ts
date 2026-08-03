@@ -10,6 +10,12 @@ const nextConfig: NextConfig = {
         port: "",
         pathname: "/storage/v1/object/public/**",
       },
+      {
+        protocol: "https",
+        hostname: "bucket.regalpdc.com",
+        port: "",
+        pathname: "/realtor-referral/**",
+      },
     ],
   },
   turbopack: {},
@@ -25,7 +31,7 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: "Content-Security-Policy",
-            value: `default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'; object-src 'none'; script-src ${scriptSrc}; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.supabase.co; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co https://static.cloudflareinsights.com; upgrade-insecure-requests`,
+            value: `default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'; object-src 'none'; script-src ${scriptSrc}; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.supabase.co https://bucket.regalpdc.com; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co https://bucket.regalpdc.com https://static.cloudflareinsights.com; upgrade-insecure-requests`,
           },
           {
             key: "Permissions-Policy",
