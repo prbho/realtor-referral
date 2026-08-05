@@ -23,6 +23,9 @@ if (!rawPublicUrl) {
 const publicUrl = rawPublicUrl.match(/^https?:\/\//i)
   ? rawPublicUrl.replace(/\/+$/, "")
   : `https://${rawPublicUrl.replace(/\/+$/, "")}`;
+const publicUrlBase = publicUrl.endsWith(`/${bucket}`)
+  ? publicUrl
+  : `${publicUrl}/${bucket}`;
 
 export async function uploadFile(
   key: string,
@@ -39,7 +42,7 @@ export async function uploadFile(
     })
   );
 
-  return `${publicUrl}/${bucket}/${key}`;
+  return `${publicUrlBase}/${key}`;
 }
 
 export async function deleteFile(key: string): Promise<void> {

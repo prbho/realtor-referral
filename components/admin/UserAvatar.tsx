@@ -7,6 +7,24 @@ interface UserAvatarProps {
   size?: number;
 }
 
+function normalizeAvatarSrc(src: string) {
+  const trimmed = src.trim();
+  if (/^https?:\/\//i.test(trimmed)) {
+    return trimmed;
+  }
+
+  if (/^\/\//.test(trimmed)) {
+    return `https:${trimmed}`;
+  }
+
+  const domainLike = /^[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)+(?::\d+)?\//;
+  if (domainLike.test(trimmed)) {
+    return `https://${trimmed.replace(/^\/+/, "")}`;
+  }
+
+  return trimmed;
+}
+
 export default function UserAvatar({ src, name, size = 32 }: UserAvatarProps) {
   const initials = name
     ? name
@@ -18,9 +36,11 @@ export default function UserAvatar({ src, name, size = 32 }: UserAvatarProps) {
     : "?";
 
   if (src) {
+    const safeSrc = normalizeAvatarSrc(src);
+
     return (
       <Image
-        src={src}
+        src={safeSrc}
         alt={name || "Avatar"}
         width={size}
         height={size}

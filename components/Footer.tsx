@@ -31,13 +31,13 @@ export default function Footer() {
             Profile
           </Link>
           <Link
-            href="/pub/privacy"
+            href="/privacy"
             className="hover:text-neutral-800 dark:hover:text-white transition-colors duration-200"
           >
             Privacy
           </Link>
           <Link
-            href="/pub/terms"
+            href="/terms"
             className="hover:text-neutral-800 dark:hover:text-white transition-colors duration-200"
           >
             Terms
