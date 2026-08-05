@@ -8,6 +8,8 @@ import {
   MailCheck,
   UserCheck,
   Wallet,
+  CreditCard,
+  HandCoins,
   Calendar,
   Loader2,
 } from "lucide-react";
@@ -21,7 +23,9 @@ interface AnalyticsData {
     ninVerified: number;
     realtor: number;
   };
-  projectedCommission: number;
+  grossCommission: number;
+  paidCommission: number;
+  remainingCommission: number;
   monthlyData: { month: string; count: number }[];
   totalReferrals: number;
   realtorCount: number;
@@ -73,37 +77,77 @@ export default function Analytics() {
   return (
     <div className="space-y-6">
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          icon={<Users className="h-5 w-5 text-blue-600 dark:text-blue-400" />}
-          label="Total Referrals"
-          value={String(data.totalReferrals)}
-          bg="bg-blue-50 dark:bg-blue-950/20"
-        />
-        <StatCard
-          icon={
-            <UserCheck className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-          }
-          label="Realtors"
-          value={String(data.realtorCount)}
-          bg="bg-emerald-50 dark:bg-emerald-950/20"
-        />
-        <StatCard
-          icon={
-            <TrendingUp className="h-5 w-5 text-violet-600 dark:text-violet-400" />
-          }
-          label="Conversion Rate"
-          value={`${data.conversionRate}%`}
-          bg="bg-violet-50 dark:bg-violet-950/20"
-        />
-        <StatCard
-          icon={
-            <Wallet className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-          }
-          label="Commission"
-          value={`₦${data.projectedCommission.toFixed(2)}`}
-          bg="bg-amber-50 dark:bg-amber-950/20"
-        />
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
+        <div className="rounded-xl bg-linear-to-br from-blue-400 to-indigo-500 p-[1.5px]">
+          <div className="rounded-[10px] bg-white dark:bg-slate-900 h-full">
+            <StatCard
+              icon={
+                <Users className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              }
+              label="Total Referrals"
+              value={String(data.totalReferrals)}
+              bg="bg-blue-50 dark:bg-blue-950/20"
+            />
+          </div>
+        </div>
+        <div className="rounded-xl bg-linear-to-br from-emerald-400 to-teal-500 p-[1.5px]">
+          <div className="rounded-[10px] bg-white dark:bg-slate-900 h-full">
+            <StatCard
+              icon={
+                <UserCheck className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+              }
+              label="Realtors"
+              value={String(data.realtorCount)}
+              bg="bg-emerald-50 dark:bg-emerald-950/20"
+            />
+          </div>
+        </div>
+        <div className="rounded-xl bg-linear-to-br from-violet-400 to-fuchsia-500 p-[1.5px]">
+          <div className="rounded-[10px] bg-white dark:bg-slate-900 h-full">
+            <StatCard
+              icon={
+                <TrendingUp className="h-5 w-5 text-violet-600 dark:text-violet-400" />
+              }
+              label="Conversion Rate"
+              value={`${data.conversionRate}%`}
+              bg="bg-violet-50 dark:bg-violet-950/20"
+            />
+          </div>
+        </div>
+        <div className="rounded-xl bg-linear-to-br from-amber-400 to-orange-500 p-[1.5px]">
+          <div className="rounded-[10px] bg-white dark:bg-slate-900 h-full">
+            <StatCard
+              icon={
+                <Wallet className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+              }
+              label="Gross Earning"
+              value={`₦${data.grossCommission.toLocaleString()}`}
+              bg="bg-amber-50 dark:bg-amber-950/20"
+            />
+          </div>
+        </div>
+        <div className="rounded-xl bg-linear-to-br from-cyan-400 to-sky-500 p-[1.5px]">
+          <div className="rounded-[10px] bg-white dark:bg-slate-900 h-full">
+            <StatCard
+              icon={
+                <HandCoins className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
+              }
+              label="Commission Left"
+              value={`₦${data.remainingCommission.toLocaleString()}`}
+              bg="bg-cyan-50 dark:bg-cyan-950/20"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4">
+        <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+          <CreditCard className="h-4 w-4 text-sky-500" />
+          <span>
+            Commission Paid:{" "}
+            <strong>₦{data.paidCommission.toLocaleString()}</strong>
+          </span>
+        </div>
       </div>
 
       {/* Funnel */}

@@ -27,12 +27,16 @@ export default async function AnalyticsPage() {
           Back to Dashboard
         </Link>
       </div>
-      <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-        📊 Analytics
-      </h1>
-      <p className="text-sm text-slate-500 dark:text-slate-400">
-        Detailed insights into your referral performance.
-      </p>
+
+      <div>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
+          Analytics
+        </h1>
+        <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+          Track your referral pipeline and commission performance in real time.
+        </p>
+      </div>
+
       <Analytics />
     </div>
   );

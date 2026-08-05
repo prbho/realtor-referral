@@ -4,6 +4,8 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
 import { verifyNin } from "@/lib/monnify";
 import { createNotification } from "@/lib/notifications";
+import { calculateCommissionFromVerifiedCount } from "@/lib/commission";
+import { getSystemSettings } from "@/lib/systemSettings";
 
 export async function POST(request: NextRequest) {
   try {
@@ -32,6 +34,7 @@ export async function POST(request: NextRequest) {
       where: { id: session.user.id },
       select: {
         nin: true,
+        ninVerified: true,
         role: true,
         isSuperAdmin: true,
         name: true,
@@ -63,6 +66,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (user.ninVerified) {
+      return NextResponse.json(
+        { error: "Your NIN has already been verified." },
+        { status: 400 }
+      );
+    }
+
     // 2. Call Monnify
     const result = await verifyNin(cleanNin);
 
@@ -72,6 +82,10 @@ export async function POST(request: NextRequest) {
         "Verification failed. Please check your NIN and try again.";
       return NextResponse.json({ error: errorMsg }, { status: 400 });
     }
+
+    const settings = await getSystemSettings();
+    const commissionPerVerifiedReferral =
+      settings.commissionPerVerifiedReferral;
 
     // 3. Prepare update data
     const updateData: { ninVerified: boolean; role?: "REALTOR" } = {
@@ -83,11 +97,34 @@ export async function POST(request: NextRequest) {
       updateData.role = "REALTOR";
     }
 
-    // 4. Update user
-    const updatedUser = await prisma.user.update({
-      where: { id: session.user.id },
-      data: updateData,
-      select: { id: true, role: true, ninVerified: true },
+    // 4. Update user and credit referrer exactly once on first successful verification.
+    const updatedUser = await prisma.$transaction(async (transaction) => {
+      const verifiedUser = await transaction.user.update({
+        where: { id: session.user.id },
+        data: updateData,
+        select: { id: true, role: true, ninVerified: true },
+      });
+
+      if (user.referredBy) {
+        const verifiedReferralCount = await transaction.user.count({
+          where: {
+            referredBy: user.referredBy,
+            ninVerified: true,
+          },
+        });
+
+        await transaction.user.update({
+          where: { id: user.referredBy },
+          data: {
+            commission: calculateCommissionFromVerifiedCount(
+              verifiedReferralCount,
+              commissionPerVerifiedReferral
+            ),
+          },
+        });
+      }
+
+      return verifiedUser;
     });
 
     // ─── Create notifications ──────────────────────────────
@@ -119,6 +156,15 @@ export async function POST(request: NextRequest) {
           "realtor",
           referrerMessage,
           `/realtors/${session.user.id}`
+        );
+
+        await createNotification(
+          user.referredBy,
+          "commission",
+          `💰 You earned ₦${commissionPerVerifiedReferral.toLocaleString()} because ${
+            user.name || "your referral"
+          } verified their NIN.`,
+          "/dashboard"
         );
       }
     }

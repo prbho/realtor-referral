@@ -23,6 +23,7 @@ export default async function AdminSettingsPage() {
       initialSettings={{
         emailLimitEnabled: settings.emailLimitEnabled,
         emailDailyLimit: settings.emailDailyLimit,
+        commissionPerVerifiedReferral: settings.commissionPerVerifiedReferral,
         ninVerificationRequired: settings.ninVerificationRequired,
         registrationPaused: settings.registrationPaused,
         registrationPauseReason: settings.registrationPauseReason,

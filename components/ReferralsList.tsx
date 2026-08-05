@@ -26,6 +26,7 @@ interface ReferralsListProps {
   referrals: Referral[];
   isVerified: boolean;
   referralLink: string;
+  commissionPerVerifiedReferral: number;
 }
 
 const roleBadgeColor = (role: string) =>
@@ -57,6 +58,7 @@ export default function ReferralsList({
   referrals,
   isVerified,
   referralLink,
+  commissionPerVerifiedReferral,
 }: ReferralsListProps) {
   return (
     <div className="col-span-6 flex flex-col bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 transition-colors duration-200 overflow-hidden">
@@ -81,7 +83,8 @@ export default function ReferralsList({
       </div>
       <div className="flex items-center mb-6 gap-3 text-sm text-slate-500 dark:text-slate-400 shrink-0">
         <p className="text-sm text-slate-400 dark:text-slate-400">
-          Grow your network, earn commissions, and unlock milestones.
+          Earn ₦{commissionPerVerifiedReferral.toLocaleString()} each time a
+          referred user successfully verifies their NIN.
         </p>
       </div>
 

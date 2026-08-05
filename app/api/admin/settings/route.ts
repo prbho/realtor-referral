@@ -26,6 +26,7 @@ export async function GET() {
       return NextResponse.json({
         emailLimitEnabled: true,
         emailDailyLimit: 100,
+        commissionPerVerifiedReferral: 1000,
         ninVerificationRequired: true,
         registrationPaused: false,
         registrationPauseReason: null,
@@ -62,6 +63,7 @@ export async function PATCH(request: NextRequest) {
     const {
       emailLimitEnabled,
       emailDailyLimit,
+      commissionPerVerifiedReferral,
       ninVerificationRequired,
       registrationPaused,
       registrationPauseReason,
@@ -73,6 +75,15 @@ export async function PATCH(request: NextRequest) {
       updateData.emailLimitEnabled = emailLimitEnabled;
     if (typeof emailDailyLimit === "number" && emailDailyLimit > 0)
       updateData.emailDailyLimit = emailDailyLimit;
+    if (
+      typeof commissionPerVerifiedReferral === "number" &&
+      Number.isFinite(commissionPerVerifiedReferral) &&
+      commissionPerVerifiedReferral >= 0
+    ) {
+      updateData.commissionPerVerifiedReferral = Math.floor(
+        commissionPerVerifiedReferral
+      );
+    }
     if (typeof ninVerificationRequired === "boolean")
       updateData.ninVerificationRequired = ninVerificationRequired;
     if (typeof registrationPaused === "boolean")
@@ -99,6 +110,7 @@ export async function PATCH(request: NextRequest) {
         id: "singleton",
         emailLimitEnabled: true,
         emailDailyLimit: 100,
+        commissionPerVerifiedReferral: 1000,
         ninVerificationRequired: true,
         registrationPaused: false,
         registrationPauseReason: null,

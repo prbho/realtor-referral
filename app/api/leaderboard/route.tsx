@@ -25,8 +25,11 @@ export async function GET(request: NextRequest) {
         name: true,
         email: true,
         image: true,
-        // For all-time we can use the stored count, for period we'll count referrals
-        referralCount: true,
+        _count: {
+          select: {
+            referrals: true,
+          },
+        },
         referrals: {
           where: startDate ? { createdAt: { gte: startDate } } : {},
           select: { id: true },
@@ -38,7 +41,7 @@ export async function GET(request: NextRequest) {
     const leaderboard = users.map((user) => {
       let count: number;
       if (period === "all") {
-        count = user.referralCount;
+        count = user._count.referrals;
       } else {
         count = user.referrals.length;
       }
@@ -48,7 +51,7 @@ export async function GET(request: NextRequest) {
         email: user.email,
         image: user.image,
         referralCount: count,
-        allTimeReferralCount: user.referralCount,
+        allTimeReferralCount: user._count.referrals,
       };
     });
 

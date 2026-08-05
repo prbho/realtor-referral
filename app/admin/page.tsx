@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser, isAdmin } from "@/lib/currentUser";
 import AdminUsersTable from "@/components/admin/AdminUsersTable";
+import { calculateCommissionFromVerifiedCount } from "@/lib/commission";
+import { getSystemSettings } from "@/lib/systemSettings";
 
 export default async function AdminPage() {
   const currentUser = await getCurrentUser();
@@ -14,6 +16,9 @@ export default async function AdminPage() {
     redirect("/dashboard");
   }
 
+  const settings = await getSystemSettings();
+  const commissionPerVerifiedReferral = settings.commissionPerVerifiedReferral;
+
   const users = await prisma.user.findMany({
     orderBy: { createdAt: "desc" },
     select: {
@@ -25,8 +30,6 @@ export default async function AdminPage() {
       email: true,
       role: true,
       referralCode: true,
-      referralCount: true,
-      commission: true,
       createdAt: true,
       phone: true,
       streetAddress: true,
@@ -52,6 +55,7 @@ export default async function AdminPage() {
           name: true,
           email: true,
           role: true,
+          ninVerified: true,
           createdAt: true,
         },
         orderBy: { createdAt: "desc" },
@@ -64,14 +68,21 @@ export default async function AdminPage() {
     const { referrer, ...rest } = user;
     return {
       ...rest,
+      referralCount: user.referrals.length,
+      commission: calculateCommissionFromVerifiedCount(
+        user.referrals.filter((referral) => referral.ninVerified).length,
+        commissionPerVerifiedReferral
+      ),
       referredBy: referrer ? { id: referrer.id, name: referrer.name } : null,
     };
   });
 
   return (
-    <AdminUsersTable
-      users={JSON.parse(JSON.stringify(transformedUsers))}
-      currentUserId={currentUser.id}
-    />
+    <>
+      <AdminUsersTable
+        users={JSON.parse(JSON.stringify(transformedUsers))}
+        currentUserId={currentUser.id}
+      />
+    </>
   );
 }

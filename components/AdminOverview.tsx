@@ -115,7 +115,7 @@ export default function AdminOverview({
             </span>
           </div>
           <p className="text-2xl font-bold mt-1.5">
-            ₦{stats.totalCommission.toFixed(2)}
+            ₦{stats.totalCommission.toLocaleString()}
           </p>
           <p className="text-xs text-slate-500 mt-0.5">Paid out</p>
         </div>

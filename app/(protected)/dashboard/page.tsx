@@ -9,6 +9,10 @@ import { AlertCircle, Zap } from "lucide-react";
 import AdminOverview from "@/components/AdminOverview";
 import DashboardStats from "@/components/DashboardStats";
 import RecruitmentLadder from "@/components/RecruitmentLadder";
+import {
+  calculateCommissionFromVerifiedCount,
+  countVerifiedReferrals,
+} from "@/lib/commission";
 import { getRankBadges, getSuperAdminPreviewBadges } from "@/lib/rankBadges";
 import RankAchievementModal from "@/components/RankAchievementModal";
 import RankBanner from "@/components/RankBanner";
@@ -72,8 +76,6 @@ export default async function DashboardPage() {
       nin: true,
       ninVerified: true,
       referralCode: true,
-      referralCount: true,
-      commission: true,
       isSuperAdmin: true,
       referredBy: true,
       referrals: {
@@ -106,6 +108,8 @@ export default async function DashboardPage() {
 
   const systemSettings = await getSystemSettings();
   const emailsSentToday = await getEmailsSentToday();
+  const commissionPerVerifiedReferral =
+    systemSettings.commissionPerVerifiedReferral;
 
   const validRealtorReferrals = await prisma.user.count({
     where: {
@@ -122,6 +126,11 @@ export default async function DashboardPage() {
   );
 
   const referrals = user.referrals;
+  const liveReferralCount = referrals.length;
+  const commission = calculateCommissionFromVerifiedCount(
+    countVerifiedReferrals(referrals),
+    commissionPerVerifiedReferral
+  );
   const currentRankLabel =
     achievedMilestones.length > 0
       ? achievedMilestones[achievedMilestones.length - 1].label
@@ -143,12 +152,15 @@ export default async function DashboardPage() {
   let registrationSettings = null;
 
   if (isAdmin) {
-    const [totalUsers, totalRealtors, totals, recentUsers] = await Promise.all([
+    const [
+      totalUsers,
+      totalRealtors,
+      recentUsers,
+      verifiedReferralPayouts,
+      liveTotalReferrals,
+    ] = await Promise.all([
       prisma.user.count(),
       prisma.user.count({ where: { role: "REALTOR" } }),
-      prisma.user.aggregate({
-        _sum: { referralCount: true, commission: true },
-      }),
       prisma.user.count({
         where: {
           createdAt: {
@@ -156,13 +168,25 @@ export default async function DashboardPage() {
           },
         },
       }),
+      prisma.user.count({
+        where: {
+          referredBy: { not: null },
+          ninVerified: true,
+        },
+      }),
+      prisma.user.count({
+        where: { referredBy: { not: null } },
+      }),
     ]);
 
     platformStats = {
       totalUsers,
       totalRealtors,
-      totalReferrals: totals._sum.referralCount || 0,
-      totalCommission: totals._sum.commission || 0,
+      totalReferrals: liveTotalReferrals,
+      totalCommission: calculateCommissionFromVerifiedCount(
+        verifiedReferralPayouts,
+        commissionPerVerifiedReferral
+      ),
       newThisWeek: recentUsers,
       emailLimitEnabled: systemSettings.emailLimitEnabled,
       emailDailyLimit: systemSettings.emailDailyLimit,
@@ -312,7 +336,7 @@ export default async function DashboardPage() {
       />
 
       <DashboardStats
-        user={user}
+        user={{ ...user, referralCount: liveReferralCount, commission }}
         referralLink={referralLink}
         ninVerificationRequired={ninVerificationRequired}
         weeklyReferrals={weeklyReferrals}
@@ -349,6 +373,7 @@ export default async function DashboardPage() {
           referrals={referrals}
           isVerified={isVerified}
           referralLink={referralLink}
+          commissionPerVerifiedReferral={commissionPerVerifiedReferral}
         />
 
         <Leaderboard />

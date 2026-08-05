@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
+import { calculateCommissionFromVerifiedCount } from "@/lib/commission";
+import { getSystemSettings } from "@/lib/systemSettings";
 
 export async function GET(
   request: NextRequest,
@@ -26,6 +28,10 @@ export async function GET(
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
+    const settings = await getSystemSettings();
+    const commissionPerVerifiedReferral =
+      settings.commissionPerVerifiedReferral;
+
     // Admin = role === "ADMIN" OR isSuperAdmin === true
     const isAdmin = currentUser.role === "ADMIN" || currentUser.isSuperAdmin;
 
@@ -39,8 +45,6 @@ export async function GET(
         image: true,
         role: true,
         ninVerified: true,
-        referralCount: true,
-        commission: isAdmin,
         createdAt: true,
         phone: isAdmin,
         whatsapp: isAdmin,
@@ -53,6 +57,11 @@ export async function GET(
         accountName: isAdmin,
         accountNumber: isAdmin,
         bankName: isAdmin,
+        _count: {
+          select: {
+            referrals: true,
+          },
+        },
         referrals: {
           where: isAdmin ? {} : { id: undefined },
           select: {
@@ -93,7 +102,7 @@ export async function GET(
         image: user.image,
         role: user.role,
         ninVerified: user.ninVerified,
-        referralCount: user.referralCount,
+        referralCount: user._count.referrals,
         createdAt: user.createdAt,
       });
     }
@@ -102,6 +111,11 @@ export async function GET(
     const { referrer, ...rest } = user;
     const response = {
       ...rest,
+      referralCount: user._count.referrals,
+      commission: calculateCommissionFromVerifiedCount(
+        user.referrals.filter((referral) => referral.ninVerified).length,
+        commissionPerVerifiedReferral
+      ),
       referredBy: referrer || null,
     };
 

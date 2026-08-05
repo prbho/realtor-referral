@@ -132,6 +132,14 @@ export default function HeaderClient({ initialUser }: HeaderClientProps) {
                       Dashboard
                     </Link>
                     <Link
+                      href="/analytics"
+                      onClick={() => setIsOpen(false)}
+                      className="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700/50 transition-colors duration-200"
+                    >
+                      <User className="h-4 w-4" />
+                      Analytics
+                    </Link>
+                    <Link
                       href="/profile"
                       onClick={() => setIsOpen(false)}
                       className="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700/50 transition-colors duration-200"
@@ -173,6 +181,22 @@ export default function HeaderClient({ initialUser }: HeaderClientProps) {
                           >
                             <FileText className="h-4 w-4" />
                             Audit Logs
+                          </Link>
+                          <Link
+                            href="/admin/commission"
+                            onClick={() => setIsOpen(false)}
+                            className="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-stone-200 dark:hover:bg-slate-700/50 transition-colors duration-200"
+                          >
+                            <FileText className="h-4 w-4" />
+                            Commission
+                          </Link>
+                          <Link
+                            href="/admin/settings"
+                            onClick={() => setIsOpen(false)}
+                            className="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-stone-200 dark:hover:bg-slate-700/50 transition-colors duration-200"
+                          >
+                            <FileText className="h-4 w-4" />
+                            System Settings
                           </Link>
                           <Link
                             href="/admin/email-templates"

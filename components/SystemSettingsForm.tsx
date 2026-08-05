@@ -2,18 +2,27 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Mail, Check, Loader2, ArrowLeft, Shield, Lock } from "lucide-react";
+import {
+  Mail,
+  Check,
+  Loader2,
+  ArrowLeft,
+  Shield,
+  Lock,
+  HandCoins,
+} from "lucide-react";
 
 type Settings = {
   emailLimitEnabled: boolean;
   emailDailyLimit: number;
+  commissionPerVerifiedReferral: number;
   ninVerificationRequired: boolean;
   registrationPaused: boolean;
   registrationPauseReason: string | null;
   registrationPauseUntil: string | null;
 };
 
-type TabId = "email" | "nin" | "registration";
+type TabId = "email" | "commission" | "nin" | "registration";
 
 export default function SystemSettingsForm({
   initialSettings,
@@ -29,6 +38,8 @@ export default function SystemSettingsForm({
   const [emailDailyLimit, setEmailDailyLimit] = useState(
     initialSettings.emailDailyLimit ?? 100
   );
+  const [commissionPerVerifiedReferral, setCommissionPerVerifiedReferral] =
+    useState(initialSettings.commissionPerVerifiedReferral ?? 1000);
   const [ninVerificationRequired, setNinVerificationRequired] = useState(
     initialSettings.ninVerificationRequired ?? true
   );
@@ -65,6 +76,7 @@ export default function SystemSettingsForm({
         body: JSON.stringify({
           emailLimitEnabled,
           emailDailyLimit,
+          commissionPerVerifiedReferral,
           ninVerificationRequired,
           registrationPaused,
           registrationPauseReason: registrationPauseReason.trim() || null,
@@ -80,6 +92,7 @@ export default function SystemSettingsForm({
         const s = data.settings;
         setEmailLimitEnabled(s.emailLimitEnabled);
         setEmailDailyLimit(s.emailDailyLimit);
+        setCommissionPerVerifiedReferral(s.commissionPerVerifiedReferral);
         setNinVerificationRequired(s.ninVerificationRequired);
         setRegistrationPaused(s.registrationPaused);
         setRegistrationPauseReason(s.registrationPauseReason ?? "");
@@ -102,6 +115,11 @@ export default function SystemSettingsForm({
       icon: <Mail className="h-4 w-4 mx-auto sm:mx-0" />,
     },
     {
+      id: "commission",
+      label: "Commission Referral Amount",
+      icon: <HandCoins className="h-4 w-4 mx-auto sm:mx-0" />,
+    },
+    {
       id: "nin",
       label: "NIN Verification",
       icon: <Shield className="h-4 w-4 mx-auto sm:mx-0" />,
@@ -122,7 +140,7 @@ export default function SystemSettingsForm({
           className="inline-flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 mb-2"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
-          Back to Users
+          Back to Admin Dashboard
         </Link>
         <h1 className="text-2xl font-bold text-neutral-800 dark:text-white transition-colors duration-200">
           System Settings
@@ -133,7 +151,7 @@ export default function SystemSettingsForm({
       </div>
 
       {/* ─── Card ───────────────────────────────────────────────── */}
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md overflow-hidden transition-colors duration-200">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md overflow-hidden transition-colors duration-200 sm:min-w-md">
         {/* ─── Tab Bar ──────────────────────────────────────────── */}
         <div className="border-b border-gray-200 dark:border-neutral-700 px-4 pt-2">
           <nav
@@ -247,6 +265,48 @@ export default function SystemSettingsForm({
                 <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
                   Set this a little below your provider&apos;s actual cap (e.g.
                   95 if your limit is 100) to leave headroom.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Commission tab */}
+          {activeTab === "commission" && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="h-8 w-8 shrink-0 rounded-full bg-amber-50 dark:bg-amber-950/40 flex items-center justify-center">
+                  <HandCoins className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                </div>
+                <div>
+                  <h2 className="font-semibold text-neutral-800 dark:text-white">
+                    Referral Commission Amount
+                  </h2>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Set how much a referrer earns when one referred user
+                    successfully verifies NIN.
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+                  Commission per verified referral (NGN)
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  step={1}
+                  value={commissionPerVerifiedReferral}
+                  onChange={(e) =>
+                    setCommissionPerVerifiedReferral(
+                      Math.max(0, Math.floor(Number(e.target.value) || 0))
+                    )
+                  }
+                  className="w-48 p-2 border border-gray-300 dark:border-neutral-600 rounded-md bg-white dark:bg-slate-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors duration-200"
+                />
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                  Example: 1000 means each successful verified referral earns
+                  ₦1,000.
                 </p>
               </div>
             </div>
@@ -381,14 +441,14 @@ export default function SystemSettingsForm({
                   : "bg-[#0b3264] text-white hover:bg-emerald-800 disabled:opacity-50"
               }`}
             >
-              <span className="relative flex h-4 w-4 items-center justify-center">
+              <span className="relative flex h-4 w-4 items-center justify-center text-white">
                 <Loader2
-                  className={`absolute h-4 w-4 animate-spin transition-opacity duration-150 ${
+                  className={`absolute h-4 w-4 animate-spin text-white transition-opacity duration-150 ${
                     isSaving ? "opacity-100" : "opacity-0"
                   }`}
                 />
                 <Check
-                  className={`absolute h-4 w-4 transition-all duration-200 ${
+                  className={`absolute text-white h-4 w-4 transition-all duration-200 ${
                     isSaved ? "opacity-100 scale-100" : "opacity-0 scale-50"
                   }`}
                 />

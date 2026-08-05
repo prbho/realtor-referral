@@ -3,6 +3,12 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
+import {
+  calculateCommissionFromVerifiedCount,
+  calculatePaidCommission,
+  calculateRemainingCommission,
+} from "@/lib/commission";
+import { getSystemSettings } from "@/lib/systemSettings";
 
 export async function GET() {
   try {
@@ -15,8 +21,7 @@ export async function GET() {
       where: { id: session.user.id },
       select: {
         id: true,
-        commission: true,
-        referralCount: true,
+        paidReferralCount: true,
         referrals: {
           select: {
             id: true,
@@ -32,6 +37,10 @@ export async function GET() {
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
+
+    const settings = await getSystemSettings();
+    const commissionPerVerifiedReferral =
+      settings.commissionPerVerifiedReferral;
 
     const totalReferrals = user.referrals.length;
     const realtorCount = user.referrals.filter(
@@ -54,11 +63,20 @@ export async function GET() {
       realtor: realtorCount,
     };
 
-    // Earning projection: if all current referrals became Realtors, commission = referralCount * 1000 (example)
-    // We'll use a configurable rate from settings or a fixed value.
-    const PROJECTED_COMMISSION_PER_REALTOR = 1000; // ₦1000 per Realtor (adjust as needed)
-    const projectedCommission =
-      totalReferrals * PROJECTED_COMMISSION_PER_REALTOR;
+    const grossCommission = calculateCommissionFromVerifiedCount(
+      ninVerifiedCount,
+      commissionPerVerifiedReferral
+    );
+    const paidCommission = calculatePaidCommission(
+      user.paidReferralCount,
+      ninVerifiedCount,
+      commissionPerVerifiedReferral
+    );
+    const remainingCommission = calculateRemainingCommission(
+      ninVerifiedCount,
+      user.paidReferralCount,
+      commissionPerVerifiedReferral
+    );
 
     // Monthly timeline (last 6 months)
     const sixMonthsAgo = new Date();
@@ -87,7 +105,9 @@ export async function GET() {
     return NextResponse.json({
       conversionRate: Math.round(conversionRate * 100) / 100,
       funnel,
-      projectedCommission,
+      grossCommission,
+      paidCommission,
+      remainingCommission,
       monthlyData,
       totalReferrals,
       realtorCount,

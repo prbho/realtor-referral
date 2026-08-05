@@ -5,6 +5,7 @@ const SETTINGS_ID = "singleton";
 export type SystemSettings = {
   emailLimitEnabled: boolean;
   emailDailyLimit: number;
+  commissionPerVerifiedReferral: number;
   ninVerificationRequired: boolean;
   registrationPaused: boolean;
   registrationPauseReason: string | null;
@@ -21,6 +22,8 @@ export async function getSystemSettings(): Promise<SystemSettings> {
   return {
     emailLimitEnabled: settings?.emailLimitEnabled ?? true,
     emailDailyLimit: settings?.emailDailyLimit ?? 100,
+    commissionPerVerifiedReferral:
+      settings?.commissionPerVerifiedReferral ?? 1000,
     ninVerificationRequired: settings?.ninVerificationRequired ?? true,
     registrationPaused: settings?.registrationPaused ?? false,
     registrationPauseReason: settings?.registrationPauseReason ?? null,
@@ -33,6 +36,7 @@ export async function getSystemSettings(): Promise<SystemSettings> {
 export async function updateSystemSettings(data: {
   emailLimitEnabled?: boolean;
   emailDailyLimit?: number;
+  commissionPerVerifiedReferral?: number;
   ninVerificationRequired?: boolean;
   registrationPaused?: boolean;
   registrationPauseReason?: string | null;
@@ -56,6 +60,10 @@ export async function updateSystemSettings(data: {
     emailLimitEnabled:
       data.emailLimitEnabled ?? current?.emailLimitEnabled ?? true,
     emailDailyLimit: data.emailDailyLimit ?? current?.emailDailyLimit ?? 100,
+    commissionPerVerifiedReferral:
+      data.commissionPerVerifiedReferral ??
+      current?.commissionPerVerifiedReferral ??
+      1000,
     ninVerificationRequired:
       data.ninVerificationRequired ?? current?.ninVerificationRequired ?? true,
     registrationPaused:
