@@ -1,31 +1,30 @@
 // components/UserAvatar.tsx
-import Image from "next/image";
-
 interface UserAvatarProps {
   src: string | null;
   name: string | null;
   size?: number;
 }
 
-function normalizeAvatarSrc(src: string) {
-  const trimmed = src.trim();
-  if (/^https?:\/\//i.test(trimmed)) {
-    return trimmed;
-  }
+// function normalizeAvatarSrc(src: string) {
+//   const trimmed = src.trim();
+//   if (/^https?:\/\//i.test(trimmed)) {
+//     return trimmed;
+//   }
 
-  if (/^\/\//.test(trimmed)) {
-    return `https:${trimmed}`;
-  }
+//   if (/^\/\//.test(trimmed)) {
+//     return `https:${trimmed}`;
+//   }
 
-  const domainLike = /^[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)+(?::\d+)?\//;
-  if (domainLike.test(trimmed)) {
-    return `https://${trimmed.replace(/^\/+/, "")}`;
-  }
+//   const domainLike = /^[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)+(?::\d+)?\//;
+//   if (domainLike.test(trimmed)) {
+//     return `https://${trimmed.replace(/^\/+/, "")}`;
+//   }
 
-  return trimmed;
-}
+//   return trimmed;
+// }
 
-export default function UserAvatar({ src, name, size = 32 }: UserAvatarProps) {
+// export default function UserAvatar({ src, name, size = 32 }: UserAvatarProps) {
+export default function UserAvatar({ name, size = 32 }: UserAvatarProps) {
   const initials = name
     ? name
         .split(" ")
@@ -35,6 +34,7 @@ export default function UserAvatar({ src, name, size = 32 }: UserAvatarProps) {
         .toUpperCase()
     : "?";
 
+  /*
   if (src) {
     const safeSrc = normalizeAvatarSrc(src);
 
@@ -49,6 +49,7 @@ export default function UserAvatar({ src, name, size = 32 }: UserAvatarProps) {
       />
     );
   }
+  */
 
   return (
     <div
