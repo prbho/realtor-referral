@@ -3,6 +3,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
 import { normalizePaidReferralCount } from "@/lib/commission";
+import { logAction } from "@/lib/auditLog";
+import { getSystemSettings } from "@/lib/systemSettings";
 
 export async function PATCH(
   request: NextRequest,
@@ -31,6 +33,10 @@ export async function PATCH(
 
     const body = await request.json();
     const paidReferralCount = Number(body?.paidReferralCount);
+    const actionType =
+      body?.actionType === "pay" || body?.actionType === "adjustment"
+        ? body.actionType
+        : "adjustment";
 
     if (!Number.isInteger(paidReferralCount) || paidReferralCount < 0) {
       return NextResponse.json(
@@ -46,6 +52,9 @@ export async function PATCH(
       where: { id: userId },
       select: {
         id: true,
+        name: true,
+        email: true,
+        paidReferralCount: true,
         referrals: {
           where: { ninVerified: true },
           select: { id: true },
@@ -63,11 +72,40 @@ export async function PATCH(
       verifiedReferralCount
     );
 
+    const settings = await getSystemSettings();
+    const commissionPerVerifiedReferral =
+      settings.commissionPerVerifiedReferral;
+    const previousPaidReferralCount = user.paidReferralCount;
+
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: { paidReferralCount: normalizedPaidReferralCount },
       select: { id: true, paidReferralCount: true },
     });
+
+    await logAction(
+      session.user.id,
+      "COMMISSION_UPDATE",
+      {
+        actionType: actionType === "pay" ? "PAY" : "ADJUSTMENT",
+        targetUserId: user.id,
+        targetEmail: user.email,
+        targetName: user.name,
+        verifiedReferralCount,
+        previousPaidReferralCount,
+        newPaidReferralCount: updatedUser.paidReferralCount,
+        paidReferralDelta:
+          updatedUser.paidReferralCount - previousPaidReferralCount,
+        commissionPerVerifiedReferral,
+        previousPaidCommission:
+          previousPaidReferralCount * commissionPerVerifiedReferral,
+        newPaidCommission:
+          updatedUser.paidReferralCount * commissionPerVerifiedReferral,
+      },
+      request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+        undefined,
+      request.headers.get("user-agent") ?? undefined
+    );
 
     return NextResponse.json({
       success: true,

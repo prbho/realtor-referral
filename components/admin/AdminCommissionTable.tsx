@@ -131,7 +131,10 @@ export default function AdminCommissionTable({
           {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ paidReferralCount: nextPaidReferralCount }),
+            body: JSON.stringify({
+              paidReferralCount: nextPaidReferralCount,
+              actionType: dialogMode,
+            }),
           }
         );
 
