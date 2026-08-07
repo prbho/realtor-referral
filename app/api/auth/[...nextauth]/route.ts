@@ -60,6 +60,14 @@ export const authOptions: NextAuthOptions = {
             throw new Error("EmailNotVerified");
           }
 
+          await prisma.user.update({
+            where: { id: user.id },
+            data: {
+              lastLoginAt: new Date(),
+              unverifiedCleanupWarningSentAt: null,
+            },
+          });
+
           await clearAttempts(identifier);
 
           return {

@@ -4,7 +4,7 @@ import { prisma } from "./prisma";
 import type { Prisma } from "@prisma/client";
 
 export async function logAction(
-  userId: string,
+  userId: string | null,
   action: string,
   details: Prisma.InputJsonValue = {},
   ip?: string | null,
@@ -13,7 +13,7 @@ export async function logAction(
   try {
     await prisma.auditLog.create({
       data: {
-        userId,
+        ...(userId ? { userId } : {}),
         action,
         details,
         ip,

@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendContactEmail } from "@/lib/email";
 import { recordEmailSent } from "@/lib/systemSettings";
+import { runUnverifiedAccountCleanup } from "@/lib/unverifiedCleanup";
 
 export async function GET() {
   // Secure with a secret header (optional)
@@ -71,5 +72,11 @@ export async function GET() {
     }
   }
 
-  return NextResponse.json({ sent: results.length });
+  const cleanup = await runUnverifiedAccountCleanup(
+    now,
+    null,
+    "cron/send-emails"
+  );
+
+  return NextResponse.json({ sent: results.length, cleanup });
 }

@@ -30,3 +30,12 @@ export function isValidNIN(nin: string): boolean {
   // Nigerian NIN is an 11-digit numeric string
   return /^\d{11}$/.test(nin.trim());
 }
+
+export function hasFirstAndLastName(name: string): boolean {
+  const parts = name
+    .trim()
+    .split(/\s+/)
+    .filter((part) => part.length > 0);
+
+  return parts.length >= 2;
+}

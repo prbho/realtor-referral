@@ -3,7 +3,11 @@ import { prisma } from "@/lib/prisma";
 import { generateReferralCode } from "@/lib/utils";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
-import { isValidEmail, isValidPassword } from "@/lib/validation";
+import {
+  hasFirstAndLastName,
+  isValidEmail,
+  isValidPassword,
+} from "@/lib/validation";
 import {
   sendReferralNotificationEmail,
   sendVerificationEmail,
@@ -18,7 +22,8 @@ import { createNotification } from "@/lib/notifications";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { name, email: rawEmail, password, referralCode } = body;
+    const { name: rawName, email: rawEmail, password, referralCode } = body;
+    const name = rawName?.trim();
     const email = rawEmail?.trim().toLowerCase();
 
     if (!name || !email || !password) {
@@ -31,6 +36,13 @@ export async function POST(request: NextRequest) {
     if (!isValidEmail(email)) {
       return NextResponse.json(
         { error: "Please enter a valid email address" },
+        { status: 400 }
+      );
+    }
+
+    if (!hasFirstAndLastName(name)) {
+      return NextResponse.json(
+        { error: "Please enter your first and last name." },
         { status: 400 }
       );
     }

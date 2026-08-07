@@ -2,7 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
-import { isValidEmail, isValidPassword } from "@/lib/validation";
+import {
+  hasFirstAndLastName,
+  isValidEmail,
+  isValidPassword,
+} from "@/lib/validation";
 import { Eye, EyeOff, Clock, TriangleAlert } from "lucide-react";
 import {
   Card,
@@ -131,6 +135,11 @@ export default function RegisterForm() {
 
     if (!isValidEmail(formData.email)) {
       setError("Please enter a valid email address");
+      return;
+    }
+
+    if (!hasFirstAndLastName(formData.name)) {
+      setError("Please enter your first and last name.");
       return;
     }
 
@@ -282,8 +291,12 @@ export default function RegisterForm() {
                   setFormData({ ...formData, name: e.target.value })
                 }
                 className="w-full p-2.5 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors duration-200"
+                placeholder="First and last name"
                 required
               />
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                Enter both your first and last name.
+              </p>
             </div>
 
             <div>
